@@ -6,6 +6,9 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Trading Limón 🍋", page_icon="🍋", layout="wide")
 
+# Metaetiqueta de verificación AdSense
+components.html('<meta name="google-adsense-account" content="ca-pub-7138404391058836">', height=0)
+
 if "saldo" not in st.session_state:
     st.session_state.saldo = 100.0
 
@@ -13,22 +16,14 @@ st.sidebar.title("🍋 Trading Limón")
 st.sidebar.caption("Plataforma Natural & Orgánica de Trading")
 opcion = st.sidebar.radio("Navegación", ["📈 Tablero / Trading", "💰 Billetera & Recompensas", "🏆 Torneo Semanal"])
 
-# --- Bloque de Anuncio de Barra Lateral ---
+# Anuncio Lateral
 st.sidebar.markdown("---")
 st.sidebar.caption("📢 Publicidad")
 codigo_adsense_sidebar = """
 <div style="text-align:center;">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7138404391058836"
-         crossorigin="anonymous"></script>
-    <ins class="adsbygoogle"
-         style="display:block"
-         data-ad-client="ca-pub-7138404391058836"
-         data-ad-slot="auto"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-    <script>
-         (adsbygoogle = window.adsbygoogle || []).push({});
-    </script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7138404391058836" crossorigin="anonymous"></script>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7138404391058836" data-ad-slot="auto" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
 </div>
 """
 components.html(codigo_adsense_sidebar, height=200)
@@ -71,19 +66,11 @@ elif opcion == "💰 Billetera & Recompensas":
     st.subheader("📺 Ganar saldo viendo anuncios")
     st.write("Visualiza la publicidad patrocinada a continuación para obtener **+$5.00** en tu cuenta.")
 
-    # --- Bloque de Anuncio Principal AdSense ---
     codigo_adsense_billetera = """
     <div style="background-color: #f9f9f9; padding: 10px; border-radius: 8px; text-align: center;">
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7138404391058836"
-             crossorigin="anonymous"></script>
-        <ins class="adsbygoogle"
-             style="display:block"
-             data-ad-client="ca-pub-7138404391058836"
-             data-ad-format="auto"
-             data-full-width-responsive="true"></ins>
-        <script>
-             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7138404391058836" crossorigin="anonymous"></script>
+        <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7138404391058836" data-ad-format="auto" data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
     """
     components.html(codigo_adsense_billetera, height=250)
