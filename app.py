@@ -17,7 +17,7 @@ if opcion == "📈 Tablero / Trading":
     col1, col2 = st.columns([3, 1])
     with col1:
         np.random.seed(42)
-        fechas = pd.date_range(end=datetime.datetime.now(), periods=50, freq="H")
+        fechas = pd.date_range(end=datetime.datetime.now(), periods=50, freq="h")
         precios = 100 + np.random.randn(50).cumsum()
         df = pd.DataFrame({"Fecha": fechas, "Precio": precios})
         df["SMA_10"] = df["Precio"].rolling(window=10).mean()
