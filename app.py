@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import datetime
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Trading Limón 🍋", page_icon="🍋", layout="wide")
 
@@ -11,6 +12,29 @@ if "saldo" not in st.session_state:
 st.sidebar.title("🍋 Trading Limón")
 st.sidebar.caption("Plataforma Natural & Orgánica de Trading")
 opcion = st.sidebar.radio("Navegación", ["📈 Tablero / Trading", "💰 Billetera & Recompensas", "🏆 Torneo Semanal"])
+
+# --- Bloque de Anuncio de Barra Lateral (Opcional) ---
+st.sidebar.markdown("---")
+st.sidebar.caption("📢 Publicidad")
+# Reemplaza 'ca-pub-XXXXXXXXXXXXXXXX' y 'YYYYYYYYYY' con tus datos de AdSense
+codigo_adsense_sidebar = """
+<div style="text-align:center;">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+         crossorigin="anonymous"></script>
+    <!-- Anuncio Lateral -->
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+         data-ad-slot="YYYYYYYYYY"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>
+         (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+</div>
+"""
+components.html(codigo_adsense_sidebar, height=200)
+
 
 if opcion == "📈 Tablero / Trading":
     st.header("📈 Tablero de Análisis e Indicadores")
@@ -43,14 +67,36 @@ if opcion == "📈 Tablero / Trading":
             st.success(f"Orden de {tipo} por ${monto} ejecutada exitosamente.")
 
 elif opcion == "💰 Billetera & Recompensas":
-    st.header("💰 Billetera y Retiros")
+    st.header("💰 Billetera y Recompensas")
     st.metric(label="Saldo en Cuenta", value=f"${st.session_state.saldo:.2f}")
+    
     st.markdown("---")
-    st.subheader("📺 Ganar saldo viendo videos")
-    st.write("Mira un video publicitario corto para recibir **+$5.00** a tu cuenta.")
-    if st.button("▶️ Ver Video Publicitario"):
+    st.subheader("📺 Ganar saldo viendo anuncios")
+    st.write("Visualiza la publicidad patrocinada a continuación para obtener **+$5.00** en tu cuenta.")
+
+    # --- Bloque de Anuncio Principal AdSense ---
+    codigo_adsense_billetera = """
+    <div style="background-color: #f9f9f9; padding: 10px; border-radius: 8px; text-align: center;">
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+             crossorigin="anonymous"></script>
+        <!-- Anuncio Billetera Recompensada -->
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+             data-ad-slot="ZZZZZZZZZZ"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>
+             (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+    </div>
+    """
+    # Se despliega la ventana HTML donde AdSense insertará el anuncio
+    components.html(codigo_adsense_billetera, height=250)
+
+    if st.button("▶️ Reclamar Recompensa por Anuncio"):
         st.session_state.saldo += 5.0
-        st.success("¡Has visto el video! Se añadieron +$5.00 a tu saldo.")
+        st.success("¡Gracias por interactuar! Se añadieron +$5.00 a tu saldo.")
         st.rerun()
 
     st.markdown("---")
