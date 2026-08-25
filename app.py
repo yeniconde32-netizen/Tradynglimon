@@ -13,19 +13,17 @@ st.sidebar.title("🍋 Trading Limón")
 st.sidebar.caption("Plataforma Natural & Orgánica de Trading")
 opcion = st.sidebar.radio("Navegación", ["📈 Tablero / Trading", "💰 Billetera & Recompensas", "🏆 Torneo Semanal"])
 
-# --- Bloque de Anuncio de Barra Lateral (Opcional) ---
+# --- Bloque de Anuncio de Barra Lateral ---
 st.sidebar.markdown("---")
 st.sidebar.caption("📢 Publicidad")
-# Reemplaza 'ca-pub-XXXXXXXXXXXXXXXX' y 'YYYYYYYYYY' con tus datos de AdSense
 codigo_adsense_sidebar = """
 <div style="text-align:center;">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7138404391058836"
          crossorigin="anonymous"></script>
-    <!-- Anuncio Lateral -->
     <ins class="adsbygoogle"
          style="display:block"
-         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-         data-ad-slot="YYYYYYYYYY"
+         data-ad-client="ca-pub-7138404391058836"
+         data-ad-slot="auto"
          data-ad-format="auto"
          data-full-width-responsive="true"></ins>
     <script>
@@ -34,7 +32,6 @@ codigo_adsense_sidebar = """
 </div>
 """
 components.html(codigo_adsense_sidebar, height=200)
-
 
 if opcion == "📈 Tablero / Trading":
     st.header("📈 Tablero de Análisis e Indicadores")
@@ -77,13 +74,11 @@ elif opcion == "💰 Billetera & Recompensas":
     # --- Bloque de Anuncio Principal AdSense ---
     codigo_adsense_billetera = """
     <div style="background-color: #f9f9f9; padding: 10px; border-radius: 8px; text-align: center;">
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7138404391058836"
              crossorigin="anonymous"></script>
-        <!-- Anuncio Billetera Recompensada -->
         <ins class="adsbygoogle"
              style="display:block"
-             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-             data-ad-slot="ZZZZZZZZZZ"
+             data-ad-client="ca-pub-7138404391058836"
              data-ad-format="auto"
              data-full-width-responsive="true"></ins>
         <script>
@@ -91,7 +86,6 @@ elif opcion == "💰 Billetera & Recompensas":
         </script>
     </div>
     """
-    # Se despliega la ventana HTML donde AdSense insertará el anuncio
     components.html(codigo_adsense_billetera, height=250)
 
     if st.button("▶️ Reclamar Recompensa por Anuncio"):
