@@ -1,88 +1,79 @@
 import streamlit as st
-import yfinance as yf
 import pandas as pd
-from datetime import datetime
+import numpy as np
+import datetime
 
-# Configuración de la página
-st.set_page_config(page_title="Trading Limón", page_icon="🍋", layout="wide")
+st.set_page_config(page_title="Trading Limón 🍋", page_icon="🍋", layout="wide")
 
-st.title("🍋 Trading Limón - Plataforma de Trading y Portafolio")
-st.write("Bienvenido a tu plataforma profesional de trading para acciones y materias primas.")
+if "saldo" not in st.session_state:
+    st.session_state.saldo = 100.0
 
-# Inicializar estado financiero y portafolio en la sesión
-if 'efectivo' not in st.session_state:
-    st.session_state.efectivo = 20000.0
+st.sidebar.title("🍋 Trading Limón")
+st.sidebar.caption("Plataforma Natural & Orgánica de Trading")
+opcion = st.sidebar.radio("Navegación", ["📈 Tablero / Trading", "💰 Billetera & Recompensas", "🏆 Torneo Semanal"])
 
-if 'portafolio' not in st.session_state:
-    st.session_state.portafolio = {
-        "AAPL": {"acciones": 2, "tipo": "Acción"},
-        "GC=F": {"acciones": 1, "tipo": "Materia Prima"}
-    }
-
-# Panel Lateral de Control
-st.sidebar.header("Panel de Control")
-opcion = st.sidebar.selectbox("Selecciona una opción", ["Mercados y Precios", "Mi Portafolio", "Comprar / Vender"])
-
-# 1. Mercados y Precios
-if opcion == "Mercados y Precios":
-    st.subheader("Cotizaciones en Vivo")
-    simbolos = {"Acciones de Apple (AAPL)": "AAPL", "Oro (GC=F)": "GC=F", "Petróleo Crudo (CL=F)": "CL=F"}
-    
-    for nombre, ticker in simbolos.items():
-        try:
-            datos = yf.Ticker(ticker)
-            precio_actual = datos.history(period="1d")['Close'].iloc[-1]
-            st.metric(label=nombre, value=f"${precio_actual:,.2f} USD")
-        except Exception:
-            st.warning(f"No se pudo cargar el precio para {nombre}")
-
-# 2. Mi Portafolio
-elif opcion == "Mi Portafolio":
-    st.subheader("Resumen de tu Cuenta")
-    st.write(f"**Efectivo disponible:** ${st.session_state.efectivo:,.2f} USD")
-    
-    st.subheader("Tus Activos Actuales")
-    if st.session_state.portafolio:
-        datos_tabla = []
-        for ticker, info in st.session_state.portafolio.items():
-            try:
-                p_act = yf.Ticker(ticker).history(period="1d")['Close'].iloc[-1]
-                val_total = p_act * info["acciones"]
-                datos_tabla.append({
-                    "Ticker": ticker,
-                    "Tipo": info["tipo"],
-                    "Cantidad": info["acciones"],
-                    "Precio Actual": f"${p_act:,.2f}",
-                    "Valor Total": f"${val_total:,.2f}"
-                })
-            except Exception:
-                pass
-        if datos_tabla:
-            st.table(pd.DataFrame(datos_tabla))
-    else:
-        st.info("Aún no tienes activos en tu portafolio.")
-
-# 3. Comprar / Vender
-elif opcion == "Comprar / Vender":
-    st.subheader("Ejecutar Operación")
-    ticker_op = st.selectbox("Selecciona el Activo", ["AAPL", "GC=F", "CL=F"])
-    cantidad_op = st.number_input("Cantidad de unidades", min_value=1, value=1)
-    
-    col1, col2 = st.columns(2)
+if opcion == "📈 Tablero / Trading":
+    st.header("📈 Tablero de Análisis e Indicadores")
+    col1, col2 = st.columns([3, 1])
     with col1:
-        if st.button("Comprar"):
-            try:
-                p_compra = yf.Ticker(ticker_op).history(period="1d")['Close'].iloc[-1]
-                costo_total = p_compra * cantidad_op
-                if st.session_state.efectivo >= costo_total:
-                    st.session_state.efectivo -= costo_total
-                    if ticker_op in st.session_state.portafolio:
-                        st.session_state.portafolio[ticker_op]["acciones"] += cantidad_op
-                    else:
-                        tipo = "Materia Prima" if ticker_op in ["GC=F", "CL=F"] else "Acción"
-                        st.session_state.portafolio[ticker_op] = {"acciones": cantidad_op, "tipo": tipo}
-                    st.success(f"¡Compra exitosa de {cantidad_op} unidades de {ticker_op}!")
-                else:
-                    st.error("No tienes suficiente efectivo disponible.")
-            except Exception as e:
-                st.error(f"Error al ejecutar la compra: {e}")
+        np.random.seed(42)
+        fechas = pd.date_range(end=datetime.datetime.now(), periods=50, freq="H")
+        precios = 100 + np.random.randn(50).cumsum()
+        df = pd.DataFrame({"Fecha": fechas, "Precio": precios})
+        df["SMA_10"] = df["Precio"].rolling(window=10).mean()
+        
+        delta = df["Precio"].diff()
+        gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+        rs = gain / loss
+        df["RSI"] = 100 - (100 / (1 + rs))
+
+        st.line_chart(df.set_index("Fecha")[["Precio", "SMA_10"]])
+        st.caption("Indicador: Media Móvil Simple (SMA 10)")
+        
+        with st.expander("Ver Indicador RSI"):
+            st.line_chart(df.set_index("Fecha")["RSI"])
+
+    with col2:
+        st.metric("Saldo Disponible", f"${st.session_state.saldo:.2f}")
+        st.subheader("Operar")
+        monto = st.number_input("Monto ($)", min_value=1.0, max_value=st.session_state.saldo, value=10.0)
+        tipo = st.selectbox("Dirección", ["COMPRA 🟢", "VENTA 🔴"])
+        if st.button("Ejecutar Orden"):
+            st.success(f"Orden de {tipo} por ${monto} ejecutada exitosamente.")
+
+elif opcion == "💰 Billetera & Recompensas":
+    st.header("💰 Billetera y Retiros")
+    st.metric(label="Saldo en Cuenta", value=f"${st.session_state.saldo:.2f}")
+    st.markdown("---")
+    st.subheader("📺 Ganar saldo viendo videos")
+    st.write("Mira un video publicitario corto para recibir **+$5.00** a tu cuenta.")
+    if st.button("▶️ Ver Video Publicitario"):
+        st.session_state.saldo += 5.0
+        st.success("¡Has visto el video! Se añadieron +$5.00 a tu saldo.")
+        st.rerun()
+
+    st.markdown("---")
+    st.subheader("💳 Retirar Fondos")
+    metodo = st.selectbox("Método de Pago", ["Nequi", "Daviplata", "PSE", "PayPal"])
+    monto_retiro = st.number_input("Monto a retirar ($)", min_value=10.0, max_value=st.session_state.saldo)
+    cuenta = st.text_input("Número de cuenta / Correo receptor")
+    if st.button("Solicitar Retiro"):
+        if st.session_state.saldo >= monto_retiro:
+            st.session_state.saldo -= monto_retiro
+            st.success(f"Solicitud de retiro de ${monto_retiro} vía {metodo} enviada.")
+            st.rerun()
+        else:
+            st.error("Saldo insuficiente.")
+
+elif opcion == "🏆 Torneo Semanal":
+    st.header("🏆 Torneo Semanal de Traders")
+    hoy = datetime.datetime.now()
+    dias_restantes = 6 - hoy.weekday()
+    st.info(f"⏳ **Tiempo restante para el cierre:** {dias_restantes} días, 12 horas")
+    st.subheader("🎁 Tabla de Premios")
+    premios_data = {
+        "Puesto": ["🥇 1er Lugar", "🥈 2do Lugar", "🥉 3er Lugar"],
+        "Premio": ["$150.00 USD", "$75.00 USD", "$25.00 USD"]
+    }
+    st.table(pd.DataFrame(premios_data))
