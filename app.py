@@ -1,242 +1,178 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
 import yfinance as yf
+import plotly.graph_objects as go
 import streamlit.components.v1 as components
-import datetime
 
-# Configuración de página
-st.set_page_config(page_title="Trading Limón 🍋", page_icon="🍋", layout="wide")
-
-# -------------------------------------------------------------------
-# CONFIGURACIÓN DE ADSENSE (Reemplaza con tus IDs reales)
-# -------------------------------------------------------------------
-ADSENSE_ID = "ca-pub-1234567890123456"      # Tu ID real de AdSense
-SLOT_SIDEBAR = "1234567890"                 # ID del anuncio lateral
-SLOT_RECOMPENSAS = "9876543210"              # ID del anuncio de recompensas
-
-# Metaetiqueta global para verificación de sitio en AdSense
-components.html(f'<meta name="google-adsense-account" content="{ADSENSE_ID}"/>', height=0)
-
-# Inicialización de Estados
-if "saldo" not in st.session_state:
-    st.session_state.saldo = 100.0
-if "historial" not in st.session_state:
-    st.session_state.historial = []
-if "premio_reclamado" not in st.session_state:
-    st.session_state.premio_reclamado = False
-
-# Menú Lateral
-st.sidebar.title("🍋 Trading Limón")
-st.sidebar.caption("Plataforma Natural & Orgánica de Trading")
-
-opcion = st.sidebar.radio(
-    "Navegación", 
-    ["📈 Tablero / Trading", "🏆 Torneo Semanal", "📺 Ganar Recompensas", "💰 Billetera y Retiros"]
+# ---------------------------------------------------------
+# 1. CONFIGURACIÓN DE PÁGINA E INYECCIÓN DE GOOGLE ADSENSE
+# ---------------------------------------------------------
+st.set_page_config(
+    page_title="Trading Limón 🍋",
+    page_icon="🍋",
+    layout="wide"
 )
 
-# Anuncio en la barra lateral
-st.sidebar.markdown("---")
-st.sidebar.caption("📢 Publicidad")
-codigo_adsense_sidebar = f"""
-<div style="text-align:center;">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={ADSENSE_ID}" crossorigin="anonymous"></script>
-    <ins class="adsbygoogle" style="display:block" data-ad-client="{ADSENSE_ID}" data-ad-slot="{SLOT_SIDEBAR}" data-ad-format="auto" data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({{}});</script>
-</div>
+# Código de script de Google AdSense capturado de tu panel
+adsense_script = """
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7138404391058836"
+     crossorigin="anonymous"></script>
 """
-with st.sidebar:
-    components.html(codigo_adsense_sidebar, height=250)
+# Inyección invisible en la aplicación para verificación y anuncios
+components.html(adsense_script, height=0, width=0)
 
-# -------------------------------------------------------------------
-# SECCIÓN 1: TABLERO DE TRADING CON VELAS Y MERCADOS
-# -------------------------------------------------------------------
-if opcion == "📈 Tablero / Trading":
-    st.title("📈 Tablero de Trading en Tiempo Real")
-    
-    col_saldo, col_pnl = st.columns(2)
-    col_saldo.metric("Saldo Disponible", f"${st.session_state.saldo:.2f} USD")
-    
-    # Selección de Mercados y Activos
-    mercado = st.selectbox("Selecciona el Mercado", ["Acciones Globales", "Materias Primas (Commodities)"])
-    
-    activos = {
-        "Acciones Globales": {"Apple": "AAPL", "Tesla": "TSLA", "Amazon": "AMZN", "Google": "GOOGL"},
-        "Materias Primas (Commodities)": {"Oro": "GC=F", "Plata": "SI=F", "Petróleo Brent": "BZ=F", "Petróleo WTI": "CL=F"}
-    }
-    
-    simbolo_nombre = st.selectbox("Activo a Operar", list(activos[mercado].keys()))
-    ticker_simbolo = activos[mercado][simbolo_nombre]
-    
-    # Obtención de datos reales con yfinance
-    df = yf.download(ticker_simbolo, period="1mo", interval="1d")
-    
-    if not df.empty:
-        # Aplanar columnas MultiIndex de yfinance si existen
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-            
-        open_series = df['Open'].squeeze()
-        high_series = df['High'].squeeze()
-        low_series = df['Low'].squeeze()
-        close_series = df['Close'].squeeze()
-        
-        # Gráfico interactivo de Velas (Candlestick)
-        fig = go.Figure(data=[go.Candlestick(
-            x=df.index,
-            open=open_series,
-            high=high_series,
-            low=low_series,
-            close=close_series,
-            name=simbolo_nombre
-        )])
-        fig.update_layout(title=f"Gráfico de Velas Japonesas - {simbolo_nombre}", xaxis_title="Fecha", yaxis_title="Precio (USD)", template="plotly_dark")
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Extracción segura del precio actual en formato numérico flotante
-        val_close = close_series.iloc[-1]
-        precio_actual = float(val_close.item() if hasattr(val_close, 'item') else val_close)
-        st.write(f"**Precio actual del activo:** ${precio_actual:.2f} USD")
+# ---------------------------------------------------------
+# 2. GESTIÓN DE ESTADO (SESSION STATE)
+# ---------------------------------------------------------
+if "saldo_usd" not in st.session_state:
+    st.session_state.saldo_usd = 1000.0  # Saldo demo inicial
+if "precio_entrada" not in st.session_state:
+    st.session_state.precio_entrada = 0.0
+if "posicion_activa" not in st.session_state:
+    st.session_state.posicion_activa = False
+if "tipo_posicion" not in st.session_state:
+    st.session_state.tipo_posicion = None  # "COMPRA" o "VENTA"
+
+# ---------------------------------------------------------
+# 3. BARRA LATERAL (SIDEBAR): CONVERTIDOR Y RETIROS REALES
+# ---------------------------------------------------------
+st.sidebar.title("🍋 Trading Limón Panel")
+st.sidebar.metric(label="Saldo Disponible (USD)", value=f"${st.session_state.saldo_usd:,.2f}")
+
+st.sidebar.markdown("---")
+st.sidebar.header("💱 Convertidor & Retiro Real")
+
+# Tasas de cambio aproximadas (puedes ajustarlas o conectar con API)
+tasa_cop = 3900.0  # 1 USD = 3,900 COP
+tasa_eur = 0.92    # 1 USD = 0.92 EUR
+
+moneda_retiro = st.sidebar.selectbox("Selecciona moneda de retiro:", ["COP (Pesos Colombianos)", "USD (Dólares)", "EUR (Euros)"])
+metodo_retiro = st.sidebar.selectbox("Método de pago:", ["Nequi", "Daviplata", "PSE", "PayPal"])
+
+# Cálculo de conversión en tiempo real
+if "COP" in moneda_retiro:
+    monto_convertido = st.session_state.saldo_usd * tasa_cop
+    simbolo = "COP $"
+elif "EUR" in moneda_retiro:
+    monto_convertido = st.session_state.saldo_usd * tasa_eur
+    simbolo = "€"
+else:
+    monto_convertido = st.session_state.saldo_usd
+    simbolo = "USD $"
+
+st.sidebar.info(f"**Valor estimado a retirar:**\n\n### {simbolo} {monto_convertido:,.2f}")
+
+monto_a_retirar = st.sidebar.number_input("Monto a retirar (USD):", min_value=10.0, max_value=float(st.session_state.saldo_usd), value=50.0)
+numero_cuenta = st.sidebar.text_input("Número de cuenta / Teléfono / Correo:")
+
+if st.sidebar.button("Solicitar Retiro Real"):
+    if numero_cuenta.strip() == "":
+        st.sidebar.error("Por favor ingresa los datos de destino para el retiro.")
     else:
-        precio_actual = 100.0
-        st.warning("No se pudieron cargar los datos del mercado en vivo. Usando precio simulado.")
+        st.session_state.saldo_usd -= monto_a_retirar
+        st.sidebar.success(f"¡Solicitud enviada! Enviaremos {simbolo} {(monto_a_retirar * (tasa_cop if 'COP' in moneda_retiro else (tasa_eur if 'EUR' in moneda_retiro else 1.0))):,.2f} vía {metodo_retiro} a {numero_cuenta}.")
 
-    st.markdown("---")
-    st.subheader("⚡ Operación Rápida")
-    
-    col_tipo, col_monto = st.columns(2)
-    tipo_op = col_tipo.radio("Dirección", ["Compra (ALTA)", "Venta (BAJA)"])
-    monto_op = col_monto.number_input("Monto a invertir ($)", min_value=1.0, max_value=st.session_state.saldo, value=10.0)
-    
-    if st.button("Ejecutar Operación"):
-        if monto_op <= st.session_state.saldo:
-            resultado_pct = np.random.choice([0.85, -1.0], p=[0.55, 0.45])
-            pnl = monto_op * resultado_pct
-            st.session_state.saldo += pnl
-            
-            estado = "Ganancia 🚀" if pnl > 0 else "Pérdida 📉"
-            st.session_state.historial.append({
-                "Fecha": pd.Timestamp.now().strftime("%H:%M:%S"),
-                "Activo": simbolo_nombre,
-                "Tipo": tipo_op,
-                "Monto": f"${monto_op:.2f}",
-                "Resultado": estado,
-                "PnL": f"${pnl:.2f}"
-            })
-            
-            if pnl > 0:
-                st.success(f"¡Operación Exitosa! Ganaste ${pnl:.2f} USD")
-            else:
-                st.error(f"Operación Cerrada. Pérdida de ${abs(pnl):.2f} USD")
-            st.rerun()
-        else:
-            st.warning("Saldo insuficiente para esta operación.")
+# ---------------------------------------------------------
+# 4. GRÁFICOS INTERACTIVOS CON MARCADOR DE PÉRDIAS / GANANCIAS
+# ---------------------------------------------------------
+st.title("📈 Plataforma Trading Limón")
 
-# -------------------------------------------------------------------
-# SECCIÓN 2: TORNEO / DUELOS SEMANALES (CONTEO REGRESIVO Y PREMIOS)
-# -------------------------------------------------------------------
-elif opcion == "🏆 Torneo Semanal":
-    st.title("🏆 Gran Torneo Semanal de Trading")
-    st.write("¡Compite por los primeros lugares de la semana y cobra tus premios en efectivo!")
-    
-    # Cálculo del conteo regresivo hasta el próximo domingo a medianoche
-    ahora = datetime.datetime.now()
-    dias_restantes = 6 - ahora.weekday()
-    fin_semana = (ahora + datetime.timedelta(days=dias_restantes)).replace(hour=23, minute=59, second=59)
-    tiempo_restante = fin_semana - ahora
-    
-    horas, rem = divmod(int(tiempo_restante.total_seconds()), 3600)
-    minutos, segundos = divmod(rem, 60)
-    
-    col_t1, col_t2, col_t3 = st.columns(3)
-    col_t1.metric("⏱️ Días Restantes", f"{tiempo_restante.days} Días")
-    col_t2.metric("⌛ Horas y Minutos", f"{horas % 24:02d}h {minutos:02d}m")
-    col_t3.metric("🎯 Tu Puesto Actual", "2º Lugar")
+ticker_symbol = st.selectbox("Selecciona un activo para operar:", ["BTC-USD", "ETH-USD", "AAPL", "NVDA", "TSLA"], index=0)
+periodo = st.select_slider("Temporalidad:", options=["1d", "5d", "1mo", "3mo", "1y"], value="1mo")
 
-    st.markdown("---")
-    st.subheader("🥇 Tabla de Posiciones de la Semana")
-    
-    # Tabla de ganadores del torneo
-    tabla_lideres = pd.DataFrame([
-        {"Puesto": "🥇 1º Lugar", "Usuario": "Carlos_Trader", "Rendimiento": "+340%", "Premio": "$50.00 USD"},
-        {"Puesto": "🥈 2º Lugar", "Usuario": "Tú (Usuario Actual)", "Rendimiento": "+210%", "Premio": "$25.00 USD"},
-        {"Puesto": "🥉 3º Lugar", "Usuario": "Trader_Pro99", "Rendimiento": "+185%", "Premio": "$10.00 USD"},
-        {"Puesto": "4º Lugar", "Usuario": "Soporte_Trading", "Rendimiento": "+120%", "Premio": "$0.00 USD"}
-    ])
-    st.table(tabla_lideres)
-    
-    st.markdown("---")
-    st.subheader("🎁 Reclamar Premio de Torneo")
-    if not st.session_state.premio_reclamado:
-        if st.button("🏆 Reclamar Premio de 2º Lugar (+$25.00 USD)"):
-            st.session_state.saldo += 25.0
-            st.session_state.premio_reclamado = True
-            st.balloons()
-            st.success("¡Felicidades! Has reclamado tu premio de $25.00 USD del torneo. Revisa tu Billetera.")
-            st.rerun()
-    else:
-        st.info("✅ Ya has reclamado el premio de esta semana. El próximo torneo inicia en el conteo regresivo.")
+# Obtener datos de yfinance
+data = yf.download(tickers=ticker_symbol, period=periodo, interval="1d")
 
-# -------------------------------------------------------------------
-# SECCIÓN 3: GANAR VIENDO VIDEOS (ADSENSE / RECOMPENSAS)
-# -------------------------------------------------------------------
-elif opcion == "📺 Ganar Recompensas":
-    st.title("📺 Zona de Recompensas")
-    st.write("Mira anuncios o videos publicitarios para recargar saldo a tu cuenta y seguir operando.")
-    
-    st.info("💡 Haz clic en el anuncio interactivo para iniciar la recompensa.")
-    
-    codigo_adsense_recompensas = f"""
-    <div style="text-align:center; padding: 20px; border: 2px dashed #4CAF50;">
-        <h4>Anuncio Patrocinado</h4>
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={ADSENSE_ID}" crossorigin="anonymous"></script>
-        <ins class="adsbygoogle" style="display:block" data-ad-client="{ADSENSE_ID}" data-ad-slot="{SLOT_RECOMPENSAS}" data-ad-format="auto" data-full-width-responsive="true"></ins>
-        <script>(adsbygoogle = window.adsbygoogle || []).push({{}});</script>
-    </div>
-    """
-    components.html(codigo_adsense_recompensas, height=220)
-    
-    if st.button("🎁 Reclamar Recompensa (+$5.00 USD)"):
-        st.session_state.saldo += 5.0
-        st.balloons()
-        st.success("¡Has recibido $5.00 USD en tu saldo!")
-        st.rerun()
+if not data.empty:
+    # Ajuste de columnas en caso de MultiIndex de pandas
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = data.columns.droplevel(1)
 
-# -------------------------------------------------------------------
-# SECCIÓN 4: BILLETERA Y RETIROS (NEQUI, DAVIPLATA, PSE, PAYPAL)
-# -------------------------------------------------------------------
-elif opcion == "💰 Billetera y Retiros":
-    st.title("💰 Tu Billetera")
-    st.metric("Saldo Total", f"${st.session_state.saldo:.2f} USD")
-    
-    st.markdown("---")
-    st.subheader("💸 Solicitar Retiro de Fondos")
-    
-    metodo = st.selectbox("Selecciona la plataforma de pago", ["Nequi", "DaviPlata", "PSE", "PayPal"])
-    monto_retiro = st.number_input("Monto a retirar ($)", min_value=5.0, max_value=st.session_state.saldo, value=10.0)
-    
-    if metodo in ["Nequi", "DaviPlata"]:
-        cuenta = st.text_input("Número de Teléfono Registrado")
-    elif metodo == "PayPal":
-        cuenta = st.text_input("Correo electrónico de PayPal")
-    else:
-        cuenta = st.text_input("Número de Documento / Cuenta Bancaria")
+    precio_actual = float(data["Close"].iloc[-1])
+
+    # Creación del gráfico con Plotly
+    fig = go.Figure()
+
+    # Velas japonesas
+    fig.add_trace(go.Candlestick(
+        x=data.index,
+        open=data['Open'],
+        high=data['High'],
+        low=data['Low'],
+        close=data['Close'],
+        name="Velas"
+    ))
+
+    # --- MARCADOR DE PÉRDIAS O GANANCIAS EN EL GRÁFICO ---
+    if st.session_state.posicion_activa:
+        precio_ent = st.session_state.precio_entrada
+        pnl = precio_actual - precio_ent if st.session_state.tipo_posicion == "COMPRA" else precio_ent - precio_actual
         
-    if st.button("Confirmar Retiro"):
-        if cuenta:
-            if monto_retiro <= st.session_state.saldo:
-                st.session_state.saldo -= monto_retiro
-                st.success(f"Solicitud enviada con éxito. Se procesará el pago de ${monto_retiro:.2f} USD a tu cuenta de {metodo} ({cuenta}).")
+        # Asignación de color: Verde (Favor / Ganancia), Rojo (En contra / Pérdida)
+        color_pnl = "#26a69a" if pnl >= 0 else "#ef5350"
+        texto_estado = f"GANANCIA: +${pnl:.2f}" if pnl >= 0 else f"PÉRDIDA: -${abs(pnl):.2f}"
+
+        # Línea horizontal del precio de entrada
+        fig.add_hline(
+            y=precio_ent, 
+            line_dash="dash", 
+            line_color="gold", 
+            annotation_text=f"Entrada: ${precio_ent:.2f}",
+            annotation_position="top left"
+        )
+
+        # Región sombreada de P&L
+        fig.add_hrect(
+            y0=precio_ent, 
+            y1=precio_actual,
+            fillcolor=color_pnl, 
+            opacity=0.25,
+            line_width=0,
+            annotation_text=f"  {texto_estado} ({st.session_state.tipo_posicion})",
+            annotation_position="top right"
+        )
+
+    fig.update_layout(
+        title=f"Gráfico de Velas — {ticker_symbol} (Precio Actual: ${precio_actual:,.2f})",
+        yaxis_title="Precio (USD)",
+        xaxis_title="Fecha",
+        template="plotly_dark",
+        height=550
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    # ---------------------------------------------------------
+    # 5. PANEL DE OPERACIONES (COMPRA / VENTA)
+    # ---------------------------------------------------------
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        if st.button("🟢 Abrir COMPRA", use_container_width=True):
+            st.session_state.posicion_activa = True
+            st.session_state.precio_entrada = precio_actual
+            st.session_state.tipo_posicion = "COMPRA"
+            st.success(f"Posición de COMPRA abierta a ${precio_actual:,.2f}")
+
+    with col2:
+        if st.button("🔴 Abrir VENTA", use_container_width=True):
+            st.session_state.posicion_activa = True
+            st.session_state.precio_entrada = precio_actual
+            st.session_state.tipo_posicion = "VENTA"
+            st.success(f"Posición de VENTA abierta a ${precio_actual:,.2f}")
+
+    with col3:
+        if st.button("⚪ Cerrar Posición", use_container_width=True):
+            if st.session_state.posicion_activa:
+                pnl_final = precio_actual - st.session_state.precio_entrada if st.session_state.tipo_posicion == "COMPRA" else st.session_state.precio_entrada - precio_actual
+                st.session_state.saldo_usd += pnl_final
+                st.session_state.posicion_activa = False
+                st.session_state.precio_entrada = 0.0
+                st.session_state.tipo_posicion = None
+                st.info(f"Posición cerrada. Resultado P&L: ${pnl_final:,.2f}")
                 st.rerun()
             else:
-                st.warning("Fondos insuficientes para retirar este monto.")
-        else:
-            st.error("Por favor completa los datos de tu cuenta para el retiro.")
+                st.warning("No tienes ninguna posición abierta.")
 
-    st.markdown("---")
-    st.subheader("📜 Historial de Operaciones")
-    if st.session_state.historial:
-        st.table(pd.DataFrame(st.session_state.historial))
-    else:
-        st.write("Aún no has realizado operaciones en esta sesión.")
+else:
+    st.error("No se pudieron cargar los datos del activo seleccionado.")
