@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="Trading Limón 🍋", page_icon="🍋", layout="wide")
 
 # Integración AdSense (Verificación global)
-ADSENSE_ID = "ca-pub-XXXXXXXXXXXXXXXX"  # Reemplaza con tu ID real de AdSense
+ADSENSE_ID = "ca-pub-713840439"  # Reemplaza con tu ID completo de AdSense si es necesario
 components.html(f'<meta name="google-adsense-account" content="{ADSENSE_ID}"/>')
 
 # Inicialización de Estados
@@ -64,19 +64,30 @@ if opcion == "📈 Tablero / Trading":
     df = yf.download(ticker_simbolo, period="1mo", interval="1d")
     
     if not df.empty:
+        # Aplanar columnas MultiIndex de yfinance si existen
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+            
+        open_series = df['Open'].squeeze()
+        high_series = df['High'].squeeze()
+        low_series = df['Low'].squeeze()
+        close_series = df['Close'].squeeze()
+        
         # Gráfico interactivo de Velas (Candlestick)
         fig = go.Figure(data=[go.Candlestick(
             x=df.index,
-            open=df['Open'].iloc[:, 0] if isinstance(df['Open'], pd.DataFrame) else df['Open'],
-            high=df['High'].iloc[:, 0] if isinstance(df['High'], pd.DataFrame) else df['High'],
-            low=df['Low'].iloc[:, 0] if isinstance(df['Low'], pd.DataFrame) else df['Low'],
-            close=df['Close'].iloc[:, 0] if isinstance(df['Close'], pd.DataFrame) else df['Close'],
+            open=open_series,
+            high=high_series,
+            low=low_series,
+            close=close_series,
             name=simbolo_nombre
         )])
         fig.update_layout(title=f"Gráfico de Velas Japonesas - {simbolo_nombre}", xaxis_title="Fecha", yaxis_title="Precio (USD)", template="plotly_dark")
         st.plotly_chart(fig, use_container_width=True)
         
-        precio_actual = float(df['Close'].iloc[-1])
+        # Extracción segura del precio actual en formato numérico flotante
+        val_close = close_series.iloc[-1]
+        precio_actual = float(val_close.item() if hasattr(val_close, 'item') else val_close)
         st.write(f"**Precio actual del activo:** ${precio_actual:.2f} USD")
     else:
         precio_actual = 100.0
@@ -91,14 +102,13 @@ if opcion == "📈 Tablero / Trading":
     
     if st.button("Ejecutar Operación"):
         if monto_op <= st.session_state.saldo:
-            # Simulación de resultado (Ganancia o Pérdida)
             resultado_pct = np.random.choice([0.85, -1.0], p=[0.55, 0.45])
             pnl = monto_op * resultado_pct
             st.session_state.saldo += pnl
             
             estado = "Ganancia 🚀" if pnl > 0 else "Pérdida 📉"
             st.session_state.historial.append({
-                "Fecha": datetime.datetime.now().strftime("%H:%M:%S"),
+                "Fecha": pd.Timestamp.now().strftime("%H:%M:%S"),
                 "Activo": simbolo_nombre,
                 "Tipo": tipo_op,
                 "Monto": f"${monto_op:.2f}",
@@ -123,7 +133,6 @@ elif opcion == "📺 Ganar Recompensas":
     
     st.info("💡 Haz clic en el anuncio interactivo para iniciar la recompensa.")
     
-    # Bloque de anuncio recompensa
     components.html(f"""
     <div style="text-align:center; padding: 20px; border: 2px dashed #4CAF50;">
         <h4>Anuncio Patrocinado</h4>
