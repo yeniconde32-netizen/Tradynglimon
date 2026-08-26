@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import streamlit.components.v1 as components
 
 # ---------------------------------------------------------
-# 1. CONFIGURACIÓN Y VERIFICACIÓN GOOGLE ADSENSE
+# 1. CONFIGURACIÓN E INYECCIÓN EN EL HEAD PARA ADSENSE
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="Trading Limón 🍋",
@@ -13,21 +13,30 @@ st.set_page_config(
     layout="wide"
 )
 
-# Metaetiqueta y Script de Verificación de AdSense
-adsense_code = """
-<meta name="google-adsense-account" content="ca-pub-7138404391058836">
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7138404391058836"
-     crossorigin="anonymous"></script>
+# Inyección forzada en el <head> principal para saltar el iframe de Streamlit
+head_injector = """
+<script>
+    var meta = parent.document.createElement('meta');
+    meta.name = "google-adsense-account";
+    meta.content = "ca-pub-7138404391058836";
+    parent.document.getElementsByTagName('head')[0].appendChild(meta);
+
+    var script = parent.document.createElement('script');
+    script.async = true;
+    script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7138404391058836";
+    script.setAttribute("crossorigin", "anonymous");
+    parent.document.getElementsByTagName('head')[0].appendChild(script);
+</script>
 """
-components.html(adsense_code, height=0, width=0)
+components.html(head_injector, height=0, width=0)
 
 # ---------------------------------------------------------
 # 2. GESTIÓN DE ESTADO (SESSION STATE)
 # ---------------------------------------------------------
 if "saldo_usd" not in st.session_state:
-    st.session_state.saldo_usd = 1000.0  # Saldo Demo
+    st.session_state.saldo_usd = 1000.0
 if "saldo_real" not in st.session_state:
-    st.session_state.saldo_real = 0.00   # Saldo Real acumulado por anuncios
+    st.session_state.saldo_real = 0.00
 if "precio_entrada" not in st.session_state:
     st.session_state.precio_entrada = 0.0
 if "posicion_activa" not in st.session_state:
@@ -36,7 +45,7 @@ if "tipo_posicion" not in st.session_state:
     st.session_state.tipo_posicion = None
 
 # ---------------------------------------------------------
-# 3. BARRA LATERAL: RETIROS Y MONETIZACIÓN PARA USUARIOS
+# 3. BARRA LATERAL: RETIROS Y MONETIZACIÓN
 # ---------------------------------------------------------
 st.sidebar.title("🍋 Trading Limón")
 st.sidebar.metric("Saldo Demo (USD)", f"${st.session_state.saldo_usd:,.2f}")
@@ -46,7 +55,6 @@ st.sidebar.markdown("---")
 st.sidebar.header("🚀 Ganar Dinero con Anuncios/Videos")
 st.sidebar.caption("Mira contenido patrocinado para ganar saldo real convertible y operar o retirar.")
 
-# Botones de recompensas
 if st.sidebar.button("📺 Ver anuncio (+$0.05 a saldo real)", use_container_width=True):
     st.session_state.saldo_real += 0.05
     st.sidebar.success("¡Recompensa acreditada! +$0.05 USD a tu saldo real.")
