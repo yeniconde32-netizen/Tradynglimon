@@ -4,6 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 import yfinance as yf
 import streamlit.components.v1 as components
+import datetime
 
 # Configuración de página
 st.set_page_config(page_title="Trading Limón 🍋", page_icon="🍋", layout="wide")
@@ -11,9 +12,9 @@ st.set_page_config(page_title="Trading Limón 🍋", page_icon="🍋", layout="w
 # -------------------------------------------------------------------
 # CONFIGURACIÓN DE ADSENSE (Reemplaza con tus IDs reales)
 # -------------------------------------------------------------------
-ADSENSE_ID = "ca-pub-XXXXXXXXXXXXXXXX"      # Tu ID de AdSense (Publisher ID)
-SLOT_SIDEBAR = "1234567890"                 # ID del anuncio de la barra lateral
-SLOT_RECOMPENSAS = "9876543210"              # ID del anuncio de la sección recompensas
+ADSENSE_ID = "ca-pub-1234567890123456"      # Tu ID real de AdSense
+SLOT_SIDEBAR = "1234567890"                 # ID del anuncio lateral
+SLOT_RECOMPENSAS = "9876543210"              # ID del anuncio de recompensas
 
 # Metaetiqueta global para verificación de sitio en AdSense
 components.html(f'<meta name="google-adsense-account" content="{ADSENSE_ID}"/>', height=0)
@@ -23,6 +24,8 @@ if "saldo" not in st.session_state:
     st.session_state.saldo = 100.0
 if "historial" not in st.session_state:
     st.session_state.historial = []
+if "premio_reclamado" not in st.session_state:
+    st.session_state.premio_reclamado = False
 
 # Menú Lateral
 st.sidebar.title("🍋 Trading Limón")
@@ -30,7 +33,7 @@ st.sidebar.caption("Plataforma Natural & Orgánica de Trading")
 
 opcion = st.sidebar.radio(
     "Navegación", 
-    ["📈 Tablero / Trading", "📺 Ganar Recompensas", "💰 Billetera y Retiros"]
+    ["📈 Tablero / Trading", "🏆 Torneo Semanal", "📺 Ganar Recompensas", "💰 Billetera y Retiros"]
 )
 
 # Anuncio en la barra lateral
@@ -131,7 +134,52 @@ if opcion == "📈 Tablero / Trading":
             st.warning("Saldo insuficiente para esta operación.")
 
 # -------------------------------------------------------------------
-# SECCIÓN 2: GANAR VIENDO VIDEOS (ADSENSE / RECOMPENSAS)
+# SECCIÓN 2: TORNEO / DUELOS SEMANALES (CONTEO REGRESIVO Y PREMIOS)
+# -------------------------------------------------------------------
+elif opcion == "🏆 Torneo Semanal":
+    st.title("🏆 Gran Torneo Semanal de Trading")
+    st.write("¡Compite por los primeros lugares de la semana y cobra tus premios en efectivo!")
+    
+    # Cálculo del conteo regresivo hasta el próximo domingo a medianoche
+    ahora = datetime.datetime.now()
+    dias_restantes = 6 - ahora.weekday()
+    fin_semana = (ahora + datetime.timedelta(days=dias_restantes)).replace(hour=23, minute=59, second=59)
+    tiempo_restante = fin_semana - ahora
+    
+    horas, rem = divmod(int(tiempo_restante.total_seconds()), 3600)
+    minutos, segundos = divmod(rem, 60)
+    
+    col_t1, col_t2, col_t3 = st.columns(3)
+    col_t1.metric("⏱️ Días Restantes", f"{tiempo_restante.days} Días")
+    col_t2.metric("⌛ Horas y Minutos", f"{horas % 24:02d}h {minutos:02d}m")
+    col_t3.metric("🎯 Tu Puesto Actual", "2º Lugar")
+
+    st.markdown("---")
+    st.subheader("🥇 Tabla de Posiciones de la Semana")
+    
+    # Tabla de ganadores del torneo
+    tabla_lideres = pd.DataFrame([
+        {"Puesto": "🥇 1º Lugar", "Usuario": "Carlos_Trader", "Rendimiento": "+340%", "Premio": "$50.00 USD"},
+        {"Puesto": "🥈 2º Lugar", "Usuario": "Tú (Usuario Actual)", "Rendimiento": "+210%", "Premio": "$25.00 USD"},
+        {"Puesto": "🥉 3º Lugar", "Usuario": "Trader_Pro99", "Rendimiento": "+185%", "Premio": "$10.00 USD"},
+        {"Puesto": "4º Lugar", "Usuario": "Soporte_Trading", "Rendimiento": "+120%", "Premio": "$0.00 USD"}
+    ])
+    st.table(tabla_lideres)
+    
+    st.markdown("---")
+    st.subheader("🎁 Reclamar Premio de Torneo")
+    if not st.session_state.premio_reclamado:
+        if st.button("🏆 Reclamar Premio de 2º Lugar (+$25.00 USD)"):
+            st.session_state.saldo += 25.0
+            st.session_state.premio_reclamado = True
+            st.balloons()
+            st.success("¡Felicidades! Has reclamado tu premio de $25.00 USD del torneo. Revisa tu Billetera.")
+            st.rerun()
+    else:
+        st.info("✅ Ya has reclamado el premio de esta semana. El próximo torneo inicia en el conteo regresivo.")
+
+# -------------------------------------------------------------------
+# SECCIÓN 3: GANAR VIENDO VIDEOS (ADSENSE / RECOMPENSAS)
 # -------------------------------------------------------------------
 elif opcion == "📺 Ganar Recompensas":
     st.title("📺 Zona de Recompensas")
@@ -139,7 +187,6 @@ elif opcion == "📺 Ganar Recompensas":
     
     st.info("💡 Haz clic en el anuncio interactivo para iniciar la recompensa.")
     
-    # Bloque de anuncio principal de AdSense
     codigo_adsense_recompensas = f"""
     <div style="text-align:center; padding: 20px; border: 2px dashed #4CAF50;">
         <h4>Anuncio Patrocinado</h4>
@@ -157,7 +204,7 @@ elif opcion == "📺 Ganar Recompensas":
         st.rerun()
 
 # -------------------------------------------------------------------
-# SECCIÓN 3: BILLETERA Y RETIROS (NEQUI, DAVIPLATA, PSE, PAYPAL)
+# SECCIÓN 4: BILLETERA Y RETIROS (NEQUI, DAVIPLATA, PSE, PAYPAL)
 # -------------------------------------------------------------------
 elif opcion == "💰 Billetera y Retiros":
     st.title("💰 Tu Billetera")
