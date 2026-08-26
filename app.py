@@ -80,12 +80,20 @@ else:
 
 st.sidebar.info(f"**Valor estimado a retirar:**\n\n### {simbolo} {monto_convertido:,.2f}")
 
-monto_a_retirar = st.sidebar.number_input("Monto a retirar (USD):", min_value=0.01, max_value=float(max(st.session_state.saldo_real, 0.01)), value=min(st.session_state.saldo_real, 1.0))
+# Configuración sin errores de número menor al mínimo permitido
+max_retiro = max(float(st.session_state.saldo_real), 0.0)
+monto_a_retirar = st.sidebar.number_input(
+    "Monto a retirar (USD):", 
+    min_value=0.0, 
+    max_value=max_retiro if max_retiro > 0.0 else 100.0, 
+    value=0.0,
+    step=1.0
+)
 numero_cuenta = st.sidebar.text_input("Número de cuenta / Teléfono / Correo:")
 
 if st.sidebar.button("Solicitar Retiro Real", use_container_width=True):
-    if st.session_state.saldo_real < monto_a_retirar or st.session_state.saldo_real <= 0:
-        st.sidebar.error("Saldo real insuficiente para realizar el retiro.")
+    if st.session_state.saldo_real < monto_a_retirar or monto_a_retirar <= 0:
+        st.sidebar.error("Ingresa un monto válido y asegúrate de tener saldo suficiente.")
     elif numero_cuenta.strip() == "":
         st.sidebar.error("Ingresa los datos del método de pago.")
     else:
