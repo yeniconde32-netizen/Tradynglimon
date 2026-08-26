@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import streamlit.components.v1 as components
 
 # ---------------------------------------------------------
-# 1. CONFIGURACIÓN Y GOOGLE ADSENSE
+# 1. CONFIGURACIÓN Y VERIFICACIÓN GOOGLE ADSENSE
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="Trading Limón 🍋",
@@ -13,12 +13,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# Script de Google AdSense
-adsense_script = """
+# Metaetiqueta y Script de Verificación de AdSense
+adsense_code = """
+<meta name="google-adsense-account" content="ca-pub-7138404391058836">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7138404391058836"
      crossorigin="anonymous"></script>
 """
-components.html(adsense_script, height=0, width=0)
+components.html(adsense_code, height=0, width=0)
 
 # ---------------------------------------------------------
 # 2. GESTIÓN DE ESTADO (SESSION STATE)
@@ -67,7 +68,6 @@ tasa_eur = 0.92
 moneda_retiro = st.sidebar.selectbox("Moneda de retiro:", ["COP (Pesos Colombianos)", "USD (Dólares)", "EUR (Euros)"])
 metodo_retiro = st.sidebar.selectbox("Método de pago:", ["Nequi", "Daviplata", "PSE", "PayPal"])
 
-# Cálculo según el saldo real acumulado por el usuario
 if "COP" in moneda_retiro:
     monto_convertido = st.session_state.saldo_real * tasa_cop
     simbolo = "COP $"
@@ -80,7 +80,6 @@ else:
 
 st.sidebar.info(f"**Valor estimado a retirar:**\n\n### {simbolo} {monto_convertido:,.2f}")
 
-# Configuración sin errores de número menor al mínimo permitido
 max_retiro = max(float(st.session_state.saldo_real), 0.0)
 monto_a_retirar = st.sidebar.number_input(
     "Monto a retirar (USD):", 
@@ -122,7 +121,6 @@ if not data.empty:
         low=data['Low'], close=data['Close'], name="Velas"
     ))
 
-    # Indicador de ganancia (Verde) o pérdida (Rojo)
     if st.session_state.posicion_activa:
         precio_ent = st.session_state.precio_entrada
         pnl = precio_actual - precio_ent if st.session_state.tipo_posicion == "COMPRA" else precio_ent - precio_actual
@@ -142,7 +140,6 @@ if not data.empty:
 
     st.plotly_chart(fig, use_container_width=True)
 
-    # Panel de Operaciones
     col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("🟢 Abrir COMPRA", use_container_width=True):
