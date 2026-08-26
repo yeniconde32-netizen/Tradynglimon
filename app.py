@@ -7,7 +7,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="Trading Limón 🍋", page_icon="🍋", layout="wide")
 
 # Metaetiqueta de verificación AdSense
-components.html('<meta name="google-adsense-account" content="ca-pub-713840439..."/>')
+components.html('<meta name="google-adsense-account" content="ca-pub-XXXXXXXXXXXXXXXX"/>')
 
 if "saldo" not in st.session_state:
     st.session_state.saldo = 100.0
@@ -34,4 +34,15 @@ codigo_adsense_sidebar = """
     </script>
 </div>
 """
-components.html(codigo_adsense_sidebar, height=300)
+with st.sidebar:
+    components.html(codigo_adsense_sidebar, height=300)
+
+# Contenido Principal
+if opcion == "📈 Tablero / Trading":
+    st.title("📈 Tablero de Trading")
+    st.metric("Saldo Disponible", f"${st.session_state.saldo:.2f} USD")
+    st.info("Selecciona tus activos y realiza simulaciones en tiempo real.")
+
+elif opcion == "💰 Billetera":
+    st.title("💰 Tu Billetera")
+    st.write(f"**Fondos actuales:** ${st.session_state.saldo:.2f} USD")
