@@ -7,100 +7,31 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="Trading Limón 🍋", page_icon="🍋", layout="wide")
 
 # Metaetiqueta de verificación AdSense
-components.html('<meta name="google-adsense-account" content="ca-pub-7138404391058836">', height=0)
+components.html('<meta name="google-adsense-account" content="ca-pub-713840439..."/>')
 
 if "saldo" not in st.session_state:
     st.session_state.saldo = 100.0
 
 st.sidebar.title("🍋 Trading Limón")
 st.sidebar.caption("Plataforma Natural & Orgánica de Trading")
-opcion = st.sidebar.radio("Navegación", ["📈 Tablero / Trading", "💰 Billetera & Recompensas", "🏆 Torneo Semanal"])
+opcion = st.sidebar.radio("Navegación", ["📈 Tablero / Trading", "💰 Billetera"])
 
 # Anuncio Lateral
 st.sidebar.markdown("---")
 st.sidebar.caption("📢 Publicidad")
 codigo_adsense_sidebar = """
 <div style="text-align:center;">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7138404391058836" crossorigin="anonymous"></script>
-    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7138404391058836" data-ad-slot="auto" data-ad-format="auto" data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+         crossorigin="anonymous"></script>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+         data-ad-slot="1234567890"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>
+         (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
 </div>
 """
-components.html(codigo_adsense_sidebar, height=200)
-
-if opcion == "📈 Tablero / Trading":
-    st.header("📈 Tablero de Análisis e Indicadores")
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        np.random.seed(42)
-        fechas = pd.date_range(end=datetime.datetime.now(), periods=50, freq="h")
-        precios = 100 + np.random.randn(50).cumsum()
-        df = pd.DataFrame({"Fecha": fechas, "Precio": precios})
-        df["SMA_10"] = df["Precio"].rolling(window=10).mean()
-        
-        delta = df["Precio"].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(14).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-        rs = gain / loss
-        df["RSI"] = 100 - (100 / (1 + rs))
-
-        st.line_chart(df.set_index("Fecha")[["Precio", "SMA_10"]])
-        st.caption("Indicador: Media Móvil Simple (SMA 10)")
-        
-        with st.expander("Ver Indicador RSI"):
-            st.line_chart(df.set_index("Fecha")["RSI"])
-
-    with col2:
-        st.metric("Saldo Disponible", f"${st.session_state.saldo:.2f}")
-        st.subheader("Operar")
-        monto = st.number_input("Monto ($)", min_value=1.0, max_value=st.session_state.saldo, value=10.0)
-        tipo = st.selectbox("Dirección", ["COMPRA 🟢", "VENTA 🔴"])
-        if st.button("Ejecutar Orden"):
-            st.success(f"Orden de {tipo} por ${monto} ejecutada exitosamente.")
-
-elif opcion == "💰 Billetera & Recompensas":
-    st.header("💰 Billetera y Recompensas")
-    st.metric(label="Saldo en Cuenta", value=f"${st.session_state.saldo:.2f}")
-    
-    st.markdown("---")
-    st.subheader("📺 Ganar saldo viendo anuncios")
-    st.write("Visualiza la publicidad patrocinada a continuación para obtener **+$5.00** en tu cuenta.")
-
-    codigo_adsense_billetera = """
-    <div style="background-color: #f9f9f9; padding: 10px; border-radius: 8px; text-align: center;">
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7138404391058836" crossorigin="anonymous"></script>
-        <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7138404391058836" data-ad-format="auto" data-full-width-responsive="true"></ins>
-        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
-    """
-    components.html(codigo_adsense_billetera, height=250)
-
-    if st.button("▶️ Reclamar Recompensa por Anuncio"):
-        st.session_state.saldo += 5.0
-        st.success("¡Gracias por interactuar! Se añadieron +$5.00 a tu saldo.")
-        st.rerun()
-
-    st.markdown("---")
-    st.subheader("💳 Retirar Fondos")
-    metodo = st.selectbox("Método de Pago", ["Nequi", "Daviplata", "PSE", "PayPal"])
-    monto_retiro = st.number_input("Monto a retirar ($)", min_value=10.0, max_value=st.session_state.saldo)
-    cuenta = st.text_input("Número de cuenta / Correo receptor")
-    if st.button("Solicitar Retiro"):
-        if st.session_state.saldo >= monto_retiro:
-            st.session_state.saldo -= monto_retiro
-            st.success(f"Solicitud de retiro de ${monto_retiro} vía {metodo} enviada.")
-            st.rerun()
-        else:
-            st.error("Saldo insuficiente.")
-
-elif opcion == "🏆 Torneo Semanal":
-    st.header("🏆 Torneo Semanal de Traders")
-    hoy = datetime.datetime.now()
-    dias_restantes = 6 - hoy.weekday()
-    st.info(f"⏳ **Tiempo restante para el cierre:** {dias_restantes} días, 12 horas")
-    st.subheader("🎁 Tabla de Premios")
-    premios_data = {
-        "Puesto": ["🥇 1er Lugar", "🥈 2do Lugar", "🥉 3er Lugar"],
-        "Premio": ["$150.00 USD", "$75.00 USD", "$25.00 USD"]
-    }
-    st.table(pd.DataFrame(premios_data))
+components.html(codigo_adsense_sidebar, height=300)
