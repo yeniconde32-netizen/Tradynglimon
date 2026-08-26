@@ -8,9 +8,15 @@ import streamlit.components.v1 as components
 # Configuración de página
 st.set_page_config(page_title="Trading Limón 🍋", page_icon="🍋", layout="wide")
 
-# Integración AdSense (Verificación global)
-ADSENSE_ID = "ca-pub-713840439"  # Reemplaza con tu ID completo de AdSense si es necesario
-components.html(f'<meta name="google-adsense-account" content="{ADSENSE_ID}"/>')
+# -------------------------------------------------------------------
+# CONFIGURACIÓN DE ADSENSE (Reemplaza con tus IDs reales)
+# -------------------------------------------------------------------
+ADSENSE_ID = "ca-pub-XXXXXXXXXXXXXXXX"      # Tu ID de AdSense (Publisher ID)
+SLOT_SIDEBAR = "1234567890"                 # ID del anuncio de la barra lateral
+SLOT_RECOMPENSAS = "9876543210"              # ID del anuncio de la sección recompensas
+
+# Metaetiqueta global para verificación de sitio en AdSense
+components.html(f'<meta name="google-adsense-account" content="{ADSENSE_ID}"/>', height=0)
 
 # Inicialización de Estados
 if "saldo" not in st.session_state:
@@ -33,7 +39,7 @@ st.sidebar.caption("📢 Publicidad")
 codigo_adsense_sidebar = f"""
 <div style="text-align:center;">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={ADSENSE_ID}" crossorigin="anonymous"></script>
-    <ins class="adsbygoogle" style="display:block" data-ad-client="{ADSENSE_ID}" data-ad-slot="1234567890" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="{ADSENSE_ID}" data-ad-slot="{SLOT_SIDEBAR}" data-ad-format="auto" data-full-width-responsive="true"></ins>
     <script>(adsbygoogle = window.adsbygoogle || []).push({{}});</script>
 </div>
 """
@@ -133,14 +139,16 @@ elif opcion == "📺 Ganar Recompensas":
     
     st.info("💡 Haz clic en el anuncio interactivo para iniciar la recompensa.")
     
-    components.html(f"""
+    # Bloque de anuncio principal de AdSense
+    codigo_adsense_recompensas = f"""
     <div style="text-align:center; padding: 20px; border: 2px dashed #4CAF50;">
         <h4>Anuncio Patrocinado</h4>
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={ADSENSE_ID}" crossorigin="anonymous"></script>
-        <ins class="adsbygoogle" style="display:block" data-ad-client="{ADSENSE_ID}" data-ad-slot="9876543210" data-ad-format="auto" data-full-width-responsive="true"></ins>
+        <ins class="adsbygoogle" style="display:block" data-ad-client="{ADSENSE_ID}" data-ad-slot="{SLOT_RECOMPENSAS}" data-ad-format="auto" data-full-width-responsive="true"></ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({{}});</script>
     </div>
-    """, height=200)
+    """
+    components.html(codigo_adsense_recompensas, height=220)
     
     if st.button("🎁 Reclamar Recompensa (+$5.00 USD)"):
         st.session_state.saldo += 5.0
