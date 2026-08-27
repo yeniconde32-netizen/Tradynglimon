@@ -58,7 +58,7 @@ dia_semana_actual = hora_actual.weekday()
 dias_para_domingo = (6 - dia_semana_actual) % 7
 fecha_fin_torneo = datetime.datetime(
     hora_actual.year, hora_actual.month, hora_actual.day
-) + datetime.timedelta(days=dias_para_domingo, hours=23, minutes=59, segundos=59)
+) + datetime.timedelta(days=int(dias_para_domingo), hours=23, minutes=59, seconds=59)
 
 tiempo_restante = fecha_fin_torneo - hora_actual
 
@@ -188,7 +188,7 @@ if not data.empty:
         if st.button("🔴 Abrir VENTA", use_container_width=True):
             st.session_state.posicion_activa = True
             st.session_state.precio_entrada = precio_actual
-            st.session_state.tipo_posicion="VENTA"
+            st.session_state.tipo_posicion = "VENTA"
             st.success(f"VENTA abierta en ${precio_actual:,.2f}")
     with col3:
         if st.button("⚪ Cerrar Posición", use_container_width=True):
