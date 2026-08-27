@@ -3,12 +3,14 @@ import pandas as pd
 import yfinance as yf
 import plotly.graph_objects as go
 import streamlit.components.v1 as components
+import time
+import datetime
 
 # ---------------------------------------------------------
 # 1. CONFIGURACIÓN E INYECCIÓN EN EL HEAD PARA ADSENSE
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="Trading Limón 🍋",
+    page_title="Trading Limón — ¡El Torneo! 🍋",
     page_icon="🍋",
     layout="wide"
 )
@@ -45,27 +47,70 @@ if "tipo_posicion" not in st.session_state:
     st.session_state.tipo_posicion = None
 
 # ---------------------------------------------------------
-# 3. BARRA LATERAL: RETIROS Y MONETIZACIÓN
+# 3. BARRA LATERAL: TORNEO SEMANAL, PREMIOS Y RETIROS
 # ---------------------------------------------------------
-st.sidebar.title("🍋 Trading Limón")
+st.sidebar.title("🍋 Trading Limón — ¡Torneo Semanal! 🏆")
+
+# --- NUEVO: CONTEO REGRESIVO ---
+st.sidebar.markdown("### ⏳ ¡Tiempo restante para ganar!")
+
+# Definimos la fecha de fin de torneo: Domingo a las 23:59:59
+# Usamos el tiempo UTC para evitar problemas de zona horaria en el servidor
+hora_actual = datetime.datetime.utcnow()
+dia_semana_actual = hora_actual.weekday() # Lunes=0, ..., Domingo=6
+
+# Calculamos los días que faltan para el domingo (6)
+dias_para_domingo = (6 - dia_semana_actual) % 7
+
+# Calculamos la fecha objetivo del domingo a medianoche
+fecha_fin_torneo = datetime.datetime(
+    hora_actual.year, hora_actual.month, hora_actual.day
+) + datetime.timedelta(days=dias_para_domingo, hours=23, minutes=59, seconds=59)
+
+# Calculamos la diferencia
+tiempo_restante = fecha_fin_torneo - hora_actual
+
+# Si el tiempo se acabó, mostramos 0
+if tiempo_restante.total_seconds() < 0:
+    st.sidebar.error("¡Torneo Terminado! Espera la nueva ronda.")
+    dias_rest, horas_rest, min_rest, seg_rest = 0, 0, 0, 0
+else:
+    # Convertimos la diferencia a componentes
+    dias_rest = tiempo_restante.days
+    horas_rest, remainder = divmod(tiempo_restante.seconds, 3600)
+    min_rest, seg_rest = divmod(remainder, 60)
+
+# Mostramos el conteo en un formato divertido con métricas
+c_dias, c_horas, c_mins, c_secs = st.sidebar.columns(4)
+c_dias.metric("Días", dias_rest)
+c_horas.metric("Hrs", horas_rest)
+c_mins.metric("Mins", min_rest)
+c_secs.metric("Segs", seg_rest)
+
+# Forzamos una actualización de la pantalla cada segundo para que el reloj avance
+time.sleep(1)
+st.rerun()
+
+st.sidebar.markdown("---")
 st.sidebar.metric("Saldo Demo (USD)", f"${st.session_state.saldo_usd:,.2f}")
 st.sidebar.metric("💵 Saldo Real Acumulado", f"${st.session_state.saldo_real:,.2f}")
 
 st.sidebar.markdown("---")
-st.sidebar.header("🚀 Ganar Dinero con Anuncios/Videos")
-st.sidebar.caption("Mira contenido patrocinado para ganar saldo real convertible y operar o retirar.")
+st.sidebar.header("🚀 ¡Gana PREMIOS REALES 🚀")
+st.sidebar.caption("¡Mira contenido, opera, sube al leaderboard y gana!")
+st.sidebar.info("🏆 **¡Premios para los 4 primeros puestos!** Gana dinero real para operar o retirar.")
 
 if st.sidebar.button("📺 Ver anuncio (+$0.05 a saldo real)", use_container_width=True):
     st.session_state.saldo_real += 0.05
-    st.sidebar.success("¡Recompensa acreditada! +$0.05 USD a tu saldo real.")
+    st.sidebar.success("¡Recompensa acreditada! +$0.05 USD.")
 
 if st.sidebar.button("✔️ Completa oferta (+$2.00 a saldo real)", use_container_width=True):
     st.session_state.saldo_real += 2.00
-    st.sidebar.success("¡Oferta completada! +$2.00 USD añadidos.")
+    st.sidebar.success("¡Oferta completada! +$2.00 USD.")
 
 if st.sidebar.button("▶️ Ver Video Tutorial (+$0.10 real)", use_container_width=True):
     st.session_state.saldo_real += 0.10
-    st.sidebar.success("¡Video visto! +$0.10 USD añadidos.")
+    st.sidebar.success("¡Video visto! +$0.10 USD.")
 
 st.sidebar.markdown("---")
 st.sidebar.header("💱 Convertidor & Retiro Real")
