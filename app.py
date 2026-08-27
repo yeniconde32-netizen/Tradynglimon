@@ -3,7 +3,6 @@ import pandas as pd
 import yfinance as yf
 import plotly.graph_objects as go
 import streamlit.components.v1 as components
-import time
 import datetime
 
 # ---------------------------------------------------------
@@ -51,45 +50,30 @@ if "tipo_posicion" not in st.session_state:
 # ---------------------------------------------------------
 st.sidebar.title("🍋 Trading Limón — ¡Torneo Semanal! 🏆")
 
-# --- NUEVO: CONTEO REGRESIVO ---
 st.sidebar.markdown("### ⏳ ¡Tiempo restante para ganar!")
 
-# Definimos la fecha de fin de torneo: Domingo a las 23:59:59
-# Usamos el tiempo UTC para evitar problemas de zona horaria en el servidor
+# Cálculo estático del tiempo restante para el torneo (Domingo a medianoche)
 hora_actual = datetime.datetime.utcnow()
-dia_semana_actual = hora_actual.weekday() # Lunes=0, ..., Domingo=6
-
-# Calculamos los días que faltan para el domingo (6)
+dia_semana_actual = hora_actual.weekday()
 dias_para_domingo = (6 - dia_semana_actual) % 7
-
-# Calculamos la fecha objetivo del domingo a medianoche
 fecha_fin_torneo = datetime.datetime(
     hora_actual.year, hora_actual.month, hora_actual.day
-) + datetime.timedelta(days=dias_para_domingo, hours=23, minutes=59, seconds=59)
+) + datetime.timedelta(days=dias_para_domingo, hours=23, minutes=59, segundos=59)
 
-# Calculamos la diferencia
 tiempo_restante = fecha_fin_torneo - hora_actual
 
-# Si el tiempo se acabó, mostramos 0
 if tiempo_restante.total_seconds() < 0:
-    st.sidebar.error("¡Torneo Terminado! Espera la nueva ronda.")
     dias_rest, horas_rest, min_rest, seg_rest = 0, 0, 0, 0
 else:
-    # Convertimos la diferencia a componentes
     dias_rest = tiempo_restante.days
     horas_rest, remainder = divmod(tiempo_restante.seconds, 3600)
     min_rest, seg_rest = divmod(remainder, 60)
 
-# Mostramos el conteo en un formato divertido con métricas
 c_dias, c_horas, c_mins, c_secs = st.sidebar.columns(4)
 c_dias.metric("Días", dias_rest)
 c_horas.metric("Hrs", horas_rest)
 c_mins.metric("Mins", min_rest)
 c_secs.metric("Segs", seg_rest)
-
-# Forzamos una actualización de la pantalla cada segundo para que el reloj avance
-time.sleep(1)
-st.rerun()
 
 st.sidebar.markdown("---")
 st.sidebar.metric("Saldo Demo (USD)", f"${st.session_state.saldo_usd:,.2f}")
@@ -204,7 +188,7 @@ if not data.empty:
         if st.button("🔴 Abrir VENTA", use_container_width=True):
             st.session_state.posicion_activa = True
             st.session_state.precio_entrada = precio_actual
-            st.session_state.tipo_posicion = "VENTA"
+            st.session_state.tipo_posicion="VENTA"
             st.success(f"VENTA abierta en ${precio_actual:,.2f}")
     with col3:
         if st.button("⚪ Cerrar Posición", use_container_width=True):
