@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import time
 from datetime import datetime
 import sqlite3
 
@@ -10,18 +9,14 @@ st.set_page_config(
     page_title="Mimo Trading Platform",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS avanzados (Modo oscuro financiero con acentos rojos y verdes profesionales)
+# Estilos CSS avanzados (Modo oscuro financiero con botones táctiles gigantes)
 st.markdown("""
     <style>
     .stApp {
         background-color: #0b0e14;
-        color: #ffffff;
-    }
-    section[data-testid="stSidebar"] {
-        background-color: #121824;
         color: #ffffff;
     }
     .metric-card {
@@ -98,6 +93,9 @@ init_trading_db()
 if 'mimo_user' not in st.session_state:
     st.session_state.mimo_user = "TraderPro"
 
+if 'active_tab' not in st.session_state:
+    st.session_state.active_tab = "Trading"
+
 def get_user_balances(username):
     conn = sqlite3.connect('mimo_trading.db')
     c = conn.cursor()
@@ -112,40 +110,52 @@ def get_user_balances(username):
 
 demo_bal, real_bal = get_user_balances(st.session_state.mimo_user)
 
-# ----------------- BARRA LATERAL (NAVEGACIÓN Y BILLETERA) -----------------
+# ----------------- BARRA LATERAL (CONTROL DE CUENTA) -----------------
 st.sidebar.title("💎 Mimo Trading")
-menu = st.sidebar.radio("Secciones", ["Panel de Operaciones (Trading)", "Depositos y Retiros (Real)", "Educación y Noticias"])
-
-st.sidebar.markdown("---")
 acc_mode = st.sidebar.selectbox("Modo de Cuenta", ["Cuenta Demo", "Cuenta Real"])
-
 current_balance = demo_bal if acc_mode == "Cuenta Demo" else real_bal
 st.sidebar.metric(label=f"Saldo en {acc_mode}", value=f"${current_balance:,.2f}")
+st.sidebar.markdown("---")
+st.sidebar.write("💡 **Navega usando los botones superiores de la aplicación para mayor comodidad móvil.**")
+
+# ----------------- NAVEGACIÓN SUPERIOR TÁCTIL (¡Adiós fallos en celular!) -----------------
+st.title("💎 Mimo Trading Platform")
+
+col_n1, col_n2, col_n3 = st.columns(3)
+with col_n1:
+    if st.button("📈 Ir a Trading Room"):
+        st.session_state.active_tab = "Trading"
+        st.rerun()
+with col_n2:
+    if st.button("💳 Billetera y Fondos"):
+        st.session_state.active_tab = "Billetera"
+        st.rerun()
+with col_n3:
+    if st.button("📰 Noticias y Gráficos"):
+        st.session_state.active_tab = "Noticias"
+        st.rerun()
+
+st.markdown("---")
 
 # ----------------- 1. PANEL DE OPERACIONES (TRADING) -----------------
-if menu == "Panel de Operaciones (Trading)":
-    st.title("💹 Mimo Trading Room - Mercados Globales")
+if st.session_state.active_tab == "Trading":
+    st.subheader("💹 Sala de Operaciones - Mercados Globales")
     
-    # LISTA GIGANTE DE ACTIVOS Y BOLSAS DE VALORES
     col_ctrl1, col_ctrl2, col_ctrl3 = st.columns(3)
     with col_ctrl1:
         asset = st.selectbox("Seleccionar Activo / Bolsa", [
-            # Materias Primas
             "GOLD (Oro - XAU/USD)", 
             "SILVER (Plata - XAG/USD)", 
             "CRUDE OIL (Petróleo WTI)", 
             "BRENT OIL (Petróleo Brent)",
-            # Divisas Forex
             "EUR/USD (Euro / Dólar)", 
             "GBP/USD (Libra / Dólar)", 
             "USD/JPY (Dólar / Yen)", 
             "AUD/USD (Dólar Australiano)",
-            # Criptomonedas
             "BTC/USD (Bitcoin)", 
             "ETH/USD (Ethereum)", 
             "SOL/USD (Solana)", 
             "BNB/USD (Binance Coin)",
-            # Acciones y Bolsas Top
             "GOOGL (Google / Alphabet)", 
             "TSLA (Tesla Inc.)", 
             "AAPL (Apple Inc.)", 
@@ -222,15 +232,16 @@ if menu == "Panel de Operaciones (Trading)":
             else:
                 st.warning("Fondos insuficientes.")
 
-    # Gráfico de comportamiento en vivo
-    st.markdown(f"**Gráfico de Precios en Vivo: {asset}**")
+    # Gráfico Dinámico
+    st.markdown(f"**Gráfico de Precios en Vivo: {asset} (Temporalidad: {expiration})**")
+    base_price = 150.0 if "Tesla" in asset or "Google" in asset else 105.0
     chart_data = pd.DataFrame(
-        np.random.randn(45, 1).cumsum() + 120,
-        columns=['Precio']
+        np.random.normal(0, 1.5, size=(50, 1)).cumsum() + base_price,
+        columns=['Precio de Mercado']
     )
-    st.line_chart(chart_data, color="#00ffcc", height=320)
+    st.line_chart(chart_data, color="#00ffcc", height=340)
 
-    # Indicador de Estado en Vivo (Ganando / Perdiendo) basado en la última transacción
+    # Indicador de Estado en Vivo (Ganando / Perdiendo)
     st.markdown("### 📊 Estado de Posición Actual en Tiempo Real")
     conn = sqlite3.connect('mimo_trading.db')
     c = conn.cursor()
@@ -268,9 +279,9 @@ if menu == "Panel de Operaciones (Trading)":
     else:
         st.info("Aún no tienes operaciones registradas en esta sesión.")
 
-# ----------------- 2. DEPÓSITOS Y RETIROS (REAL) -----------------
-elif menu == "Depositos y Retiros (Real)":
-    st.title("💳 Gestión de Billetera y Fondos Reales")
+# ----------------- 2. DEPÓSITOS Y RETIROS (BILLETERA) -----------------
+elif st.session_state.active_tab == "Billetera":
+    st.subheader("💳 Gestión de Billetera y Fondos Reales")
     st.write("Administra los fondos de tu cuenta real y retira tus ganancias de manera segura.")
     
     col_dep, col_ret = st.columns(2)
@@ -309,11 +320,10 @@ elif menu == "Depositos y Retiros (Real)":
                 st.error("Saldo real insuficiente para realizar este retiro.")
 
 # ----------------- 3. EDUCACIÓN Y NOTICIAS -----------------
-elif menu == "Educación y Noticias":
-    st.title("🎓 Centro Técnico y Noticias de Mercados")
+elif st.session_state.active_tab == "Noticias":
+    st.subheader("🎓 Centro Técnico y Noticias de Mercados")
     st.write("Análisis profesionales de gráficos, movimientos de precios y gestión de riesgo.")
     
-    st.subheader("📰 Noticias de Gráficos y Movimientos Globales")
     st.markdown("""
         <div class="news-box">
             <h4>📈 Oro (GOLD) alcanza máximos históricos por alta demanda institucional</h4>
@@ -330,5 +340,4 @@ elif menu == "Educación y Noticias":
     """, unsafe_allow_html=True)
     
     st.markdown("---")
-    st.subheader("📊 Guías Visuales de Análisis Técnico")
     st.info("💡 Consejo de trader: Estudia los patrones de velas y soportes antes de ejecutar operaciones con dinero real en la plataforma.")
