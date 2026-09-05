@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import time
 from datetime import datetime
 import sqlite3
 
@@ -12,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Estilos CSS avanzados (Modo oscuro financiero estilo IQ Option)
+# Estilos CSS avanzados (Modo oscuro financiero con acentos rojos y verdes profesionales)
 st.markdown("""
     <style>
     .stApp {
@@ -39,10 +40,30 @@ st.markdown("""
     }
     .news-box {
         background-color: #161f30;
-        border-left: 4px solid #00ffcc;
+        border-left: 4px solid #ff4b4b;
         padding: 12px;
         border-radius: 4px;
         margin-bottom: 10px;
+    }
+    .status-win {
+        background-color: rgba(0, 255, 204, 0.15);
+        border: 1px solid #00ffcc;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        color: #00ffcc;
+        font-weight: bold;
+        font-size: 18px;
+    }
+    .status-loss {
+        background-color: rgba(255, 75, 75, 0.15);
+        border: 1px solid #ff4b4b;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        color: #ff4b4b;
+        font-weight: bold;
+        font-size: 18px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -74,11 +95,9 @@ def init_trading_db():
 
 init_trading_db()
 
-# Control de sesión de usuario
 if 'mimo_user' not in st.session_state:
     st.session_state.mimo_user = "TraderPro"
 
-# Asegurar que el usuario existe en la BD
 def get_user_balances(username):
     conn = sqlite3.connect('mimo_trading.db')
     c = conn.cursor()
@@ -93,7 +112,7 @@ def get_user_balances(username):
 
 demo_bal, real_bal = get_user_balances(st.session_state.mimo_user)
 
-# ----------------- BARRA LATERAL (NAVEGACIÓN Y DEPÓSITOS) -----------------
+# ----------------- BARRA LATERAL (NAVEGACIÓN Y BILLETERA) -----------------
 st.sidebar.title("💎 Mimo Trading")
 menu = st.sidebar.radio("Secciones", ["Panel de Operaciones (Trading)", "Depositos y Retiros (Real)", "Educación y Noticias"])
 
@@ -105,35 +124,50 @@ st.sidebar.metric(label=f"Saldo en {acc_mode}", value=f"${current_balance:,.2f}"
 
 # ----------------- 1. PANEL DE OPERACIONES (TRADING) -----------------
 if menu == "Panel de Operaciones (Trading)":
-    st.title("💹 Mimo Trading Room - Alta Precisión")
+    st.title("💹 Mimo Trading Room - Mercados Globales")
     
+    # LISTA GIGANTE DE ACTIVOS Y BOLSAS DE VALORES
     col_ctrl1, col_ctrl2, col_ctrl3 = st.columns(3)
     with col_ctrl1:
-        asset = st.selectbox("Activo / Bolsa", ["EUR/USD (Divisas Forex)", "BTC/USD (Criptomonedas)", "AAPL (Acciones Apple)", "TSLA (Acciones Tesla)"])
+        asset = st.selectbox("Seleccionar Activo / Bolsa", [
+            # Materias Primas
+            "GOLD (Oro - XAU/USD)", 
+            "SILVER (Plata - XAG/USD)", 
+            "CRUDE OIL (Petróleo WTI)", 
+            "BRENT OIL (Petróleo Brent)",
+            # Divisas Forex
+            "EUR/USD (Euro / Dólar)", 
+            "GBP/USD (Libra / Dólar)", 
+            "USD/JPY (Dólar / Yen)", 
+            "AUD/USD (Dólar Australiano)",
+            # Criptomonedas
+            "BTC/USD (Bitcoin)", 
+            "ETH/USD (Ethereum)", 
+            "SOL/USD (Solana)", 
+            "BNB/USD (Binance Coin)",
+            # Acciones y Bolsas Top
+            "GOOGL (Google / Alphabet)", 
+            "TSLA (Tesla Inc.)", 
+            "AAPL (Apple Inc.)", 
+            "AMZN (Amazon)", 
+            "MSFT (Microsoft)"
+        ])
     with col_ctrl2:
-        investment = st.number_input("Monto de Inversión ($)", min_value=1.0, max_value=float(current_balance) if current_balance > 0 else 1.0, value=50.0, step=10.0)
+        max_inv = float(current_balance) if current_balance >= 1.0 else 1.0
+        investment = st.number_input("Monto de Inversión ($)", min_value=1.0, max_value=max_inv, value=min(50.0, max_inv), step=10.0)
     with col_ctrl3:
-        expiration = st.selectbox("Tiempo de Expiración", ["30 Segundos", "1 Minuto", "5 Minutos"])
+        expiration = st.selectbox("Tiempo de Expiración", ["30 Segundos", "1 Minuto", "5 Minutos", "15 Minutos"])
 
-    # Gráfico de comportamiento en vivo
-    chart_data = pd.DataFrame(
-        np.random.randn(40, 1).cumsum() + 105,
-        columns=['Precio en Vivo']
-    )
-    
-    st.line_chart(chart_data, color="#00ffcc", height=350)
-    
-    # Botones de Operación Rápida CALL / PUT con indicador dinámico
-    st.markdown("### ⚡ Ejecución Rápida")
+    # Botones de Ejecución Rápida
+    st.markdown("### ⚡ Ejecución Rápida de Órdenes")
     c_call, c_put = st.columns(2)
     
     with c_call:
         if st.button("🟢 CALL (COMPRAR / SUBIR)", type="primary"):
             if current_balance >= investment:
-                # Actualizar saldo en base de datos
                 conn = sqlite3.connect('mimo_trading.db')
                 c = conn.cursor()
-                won = np.random.choice([True, False], p=[0.55, 0.45]) # Probabilidad realista
+                won = np.random.choice([True, False], p=[0.55, 0.45])
                 profit = investment * 1.85 if won else 0
                 
                 if acc_mode == "Cuenta Demo":
@@ -156,10 +190,10 @@ if menu == "Panel de Operaciones (Trading)":
                     st.error(f"📉 Operación CALL Perdida. -${investment:,.2f}")
                 st.rerun()
             else:
-                st.warning("Fondos insuficientes para esta operación.")
+                st.warning("Fondos insuficientes.")
 
     with c_put:
-        if st.button("🔴 PUT (VENDER / BAJAR)", type="secondary"):
+        if st.button("🔴 PUT (VENDER / BAJAR)"):
             if current_balance >= investment:
                 conn = sqlite3.connect('mimo_trading.db')
                 c = conn.cursor()
@@ -186,9 +220,44 @@ if menu == "Panel de Operaciones (Trading)":
                     st.error(f"📈 Operación PUT Perdida. -${investment:,.2f}")
                 st.rerun()
             else:
-                st.warning("Fondos insuficientes para esta operación.")
+                st.warning("Fondos insuficientes.")
 
-    # Historial de transacciones del usuario
+    # Gráfico de comportamiento en vivo
+    st.markdown(f"**Gráfico de Precios en Vivo: {asset}**")
+    chart_data = pd.DataFrame(
+        np.random.randn(45, 1).cumsum() + 120,
+        columns=['Precio']
+    )
+    st.line_chart(chart_data, color="#00ffcc", height=320)
+
+    # Indicador de Estado en Vivo (Ganando / Perdiendo) basado en la última transacción
+    st.markdown("### 📊 Estado de Posición Actual en Tiempo Real")
+    conn = sqlite3.connect('mimo_trading.db')
+    c = conn.cursor()
+    c.execute("SELECT type, amount, result FROM transactions WHERE username = ? ORDER BY id DESC LIMIT 1", (st.session_state.mimo_user,))
+    last_trade = c.fetchone()
+    conn.close()
+
+    if last_trade:
+        t_type, t_amt, t_res = last_trade
+        if t_res == "Ganada":
+            st.markdown(f"""
+                <div class="status-win">
+                    🟢 ¡ESTADO: GANANDO POSICIÓN! (+{t_type} en {asset})<br>
+                    <span style="font-size: 14px; color: #ffffff;">La línea de tendencia favorece tu operación activa. Margen en verde.</span>
+                </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+                <div class="status-loss">
+                    🔴 ¡ESTADO: PERDIENDO POSICIÓN! (-{t_type} en {asset})<br>
+                    <span style="font-size: 14px; color: #ffffff;">El mercado se movió en contra de tu orden. Margen en rojo.</span>
+                </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.info("Realiza una orden CALL o PUT para activar el indicador visual de ganancia/pérdida en tiempo real.")
+
+    # Historial de transacciones
     st.markdown("---")
     st.subheader("📜 Historial de Operaciones Financieras")
     conn = sqlite3.connect('mimo_trading.db')
@@ -197,12 +266,12 @@ if menu == "Panel de Operaciones (Trading)":
     if not df_hist.empty:
         st.dataframe(df_hist, use_container_width=True)
     else:
-        st.info("Aún no tienes operaciones registradas.")
+        st.info("Aún no tienes operaciones registradas en esta sesión.")
 
 # ----------------- 2. DEPÓSITOS Y RETIROS (REAL) -----------------
 elif menu == "Depositos y Retiros (Real)":
     st.title("💳 Gestión de Billetera y Fondos Reales")
-    st.write("Gestiona tus recargas de capital y retira tus ganancias de forma segura.")
+    st.write("Administra los fondos de tu cuenta real y retira tus ganancias de manera segura.")
     
     col_dep, col_ret = st.columns(2)
     
@@ -217,12 +286,14 @@ elif menu == "Depositos y Retiros (Real)":
             c.execute("UPDATE users SET balance_real = ? WHERE username = ?", (new_real, st.session_state.mimo_user))
             conn.commit()
             conn.close()
-            st.success(f"¡Depósito exitoso de ${dep_amount:,.2f}! Tus fondos ya están disponibles en Cuenta Real.")
+            st.success(f"¡Depósito exitoso de ${dep_amount:,.2f}! Fondos acreditados en Cuenta Real.")
             st.rerun()
 
     with col_ret:
         st.subheader("📤 Retirar Ganancias")
-        ret_amount = st.number_input("Monto a Retirar ($ USD)", min_value=10.0, max_value=float(real_bal) if real_bal > 0 else 10.0, value=50.0, step=10.0)
+        max_ret = float(real_bal) if real_bal >= 10.0 else 10.0
+        val_ret = 50.0 if real_bal >= 50.0 else max_ret
+        ret_amount = st.number_input("Monto a Retirar ($ USD)", min_value=10.0, max_value=max_ret, value=val_ret, step=10.0)
         dest = st.text_input("Cuenta Bancaria / Dirección de Retiro")
         if st.button("Solicitar Retiro"):
             if real_bal >= ret_amount:
@@ -235,31 +306,29 @@ elif menu == "Depositos y Retiros (Real)":
                 st.success(f"Solicitud de retiro de ${ret_amount:,.2f} procesada con éxito.")
                 st.rerun()
             else:
-                st.error("No tienes suficiente saldo real disponible para este retiro.")
+                st.error("Saldo real insuficiente para realizar este retiro.")
 
 # ----------------- 3. EDUCACIÓN Y NOTICIAS -----------------
 elif menu == "Educación y Noticias":
-    st.title("🎓 Centro Educativo y Noticias de Mercados")
-    st.write("Aprende las estrategias clave de los traders profesionales y mantente al tanto de las noticias globales.")
+    st.title("🎓 Centro Técnico y Noticias de Mercados")
+    st.write("Análisis profesionales de gráficos, movimientos de precios y gestión de riesgo.")
     
-    st.subheader("📰 Últimas Noticias del Mercado")
+    st.subheader("📰 Noticias de Gráficos y Movimientos Globales")
     st.markdown("""
         <div class="news-box">
-            <h4>💡 EUR/USD reacciona a los datos de inflación de la Eurozona</h4>
-            <p>Los analistas recomiendan cautela en los pares de divisas europeos durante la sesión de la tarde debido a variaciones imprevistas en los tipos de interés.</p>
+            <h4>📈 Oro (GOLD) alcanza máximos históricos por alta demanda institucional</h4>
+            <p>Los gráficos de 1 hora muestran ruptura de resistencia clave. Los traders vigilan de cerca los rebotes en soportes técnicos.</p>
         </div>
         <div class="news-box">
-            <h4>🚀 Bitcoin (BTC) rompe resistencia clave superando niveles históricos</h4>
-            <p>La alta volatilidad en criptomonedas abre oportunidades ideales para operaciones de corto plazo (1 a 5 minutos).</p>
+            <h4>🛢️ Petróleo WTI reacciona ante recortes imprevistos de producción</h4>
+            <p>La volatilidad en materias primas genera oportunidades ideales para operaciones rápidas en temporalidades de 1 a 5 minutos.</p>
+        </div>
+        <div class="news-box">
+            <h4>💻 Acciones de Google (GOOGL) y Tesla (TSLA) bajo lupa técnica</h4>
+            <p>Patrones de velas envolventes alcistas detectados en la apertura de la bolsa de Nueva York.</p>
         </div>
     """, unsafe_allow_html=True)
     
     st.markdown("---")
-    st.subheader("🎥 Videos Educativos Recomendados")
-    col_v1, col_v2 = st.columns(2)
-    with col_v1:
-        st.write("**1. Cómo leer Velas Japonesas**")
-        st.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ") # Video instructivo de ejemplo
-    with col_v2:
-        st.write("**2. Gestión de Riesgo para Principiantes**")
-        st.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    st.subheader("📊 Guías Visuales de Análisis Técnico")
+    st.info("💡 Consejo de trader: Estudia los patrones de velas y soportes antes de ejecutar operaciones con dinero real en la plataforma.")
