@@ -3,7 +3,8 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import sqlite3
-import feedparser  # Para noticias en tiempo real
+import urllib.request
+import xml.etree.ElementTree as ET
 
 # Configuración de la página
 st.set_page_config(
@@ -212,7 +213,6 @@ if not st.session_state.logged_in:
 demo_bal, real_bal = get_user_balances(st.session_state.mimo_user)
 current_balance = demo_bal if st.session_state.acc_mode == "Cuenta Demo" else real_bal
 
-# Mostrar el Logo institucional en la parte superior principal
 render_mimo_logo()
 
 # Encabezado con Cuenta y Saldo en Vivo
@@ -280,7 +280,6 @@ if st.session_state.active_tab == "Trading":
         columns=['Precio de Mercado']
     )
     
-    # Calcular indicadores simulados si están seleccionados
     if "SMA (Media Móvil 20)" in indicators:
         price_series['SMA_20'] = price_series['Precio de Mercado'].rolling(window=5).mean().fillna(base_price)
     if "Bandas de Bollinger" in indicators:
@@ -289,10 +288,9 @@ if st.session_state.active_tab == "Trading":
         price_series['Banda Superior'] = sma + (std * 2)
         price_series['Banda Inferior'] = sma - (std * 2)
 
-    # Mostrar gráfico adaptado a toda la hoja
     if "Velas Japonesas" in chart_type:
         st.subheader("🕯️ Vista de Velas Japonesas Técnicas")
-        st.bar_chart(price_series[['Precio_Apertura' if 'Precio_Apertura' in price_series else 'Precio_Mercado']], color="#00ffcc", height=450)
+        st.bar_chart(price_series, color="#00ffcc", height=450)
     elif "Área" in chart_type:
         st.area_chart(price_series, color="#00ffcc", height=450)
     else:
@@ -430,25 +428,39 @@ elif st.session_state.active_tab == "Billetera":
             else:
                 st.error("Fondos insuficientes en la cuenta real.")
 
-# ----------------- 3. NOTICIAS EN TIEMPO REAL -----------------
+# ----------------- 3. NOTICIAS EN TIEMPO REAL NATIVAS -----------------
 elif st.session_state.active_tab == "Noticias":
     st.subheader("📰 Noticias Financieras Actualizadas en Tiempo Real")
     st.write("Flujo de información en vivo de mercados globales (Forex, Cripto y Acciones).")
     
+    news_loaded = False
     try:
-        feed = feedparser.parse("https://es.investing.com/rss/news.rss")
-        if feed.entries:
-            for entry in feed.entries[:8]:
-                st.markdown(f"""
-                    <div class="news-box">
-                        <h4>📌 {entry.title}</h4>
-                        <p>{entry.summary}</p>
-                        <a href="{entry.link}" target="_blank" style="color: #00ffcc; font-size: 13px;">Leer artículo completo en la fuente &rarr;</a>
-                    </div>
-                """, unsafe_allow_html=True)
-        else:
-            raise Exception("No feed")
+        req = urllib.request.Request(
+            "https://es.investing.com/rss/news.rss", 
+            headers={'User-Agent': 'Mozilla/5.0'}
+        )
+        with urllib.request.urlopen(req, timeout=4) as response:
+            xml_data = response.read()
+            root = ET.fromstring(xml_data)
+            items = root.findall('.//item')
+            if items:
+                for item in items[:8]:
+                    title = item.find('title').text if item.find('title') is not None else "Noticia Financiera"
+                    description = item.find('description').text if item.find('description') is not None else "Ver detalles en mercado global."
+                    link = item.find('link').text if item.find('link') is not None else "#"
+                    
+                    st.markdown(f"""
+                        <div class="news-box">
+                            <h4>📌 {title}</h4>
+                            <p>{description}</p>
+                            <a href="{link}" target="_blank" style="color: #00ffcc; font-size: 13px;">Leer artículo completo en la fuente &rarr;</a>
+                        </div>
+                    """, unsafe_allow_html=True)
+                news_loaded = True
     except:
+        pass
+
+    if not news_loaded:
         st.markdown("""
             <div class="news-box">
                 <h4>📈 Bancos centrales evalúan tasas de interés para el próximo trimestre</h4>
