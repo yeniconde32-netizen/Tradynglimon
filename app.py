@@ -12,26 +12,34 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS avanzados (Modo oscuro financiero con botones táctiles gigantes)
+# Estilos CSS avanzados (Modo oscuro financiero impecable y botones modernos)
 st.markdown("""
     <style>
     .stApp {
         background-color: #0b0e14;
         color: #ffffff;
     }
-    .metric-card {
-        background-color: #1a2233;
+    .metric-container {
+        background-color: #161f30;
         border: 1px solid #2a3447;
-        padding: 15px;
-        border-radius: 10px;
-        text-align: center;
+        padding: 10px 15px;
+        border-radius: 8px;
+        display: inline-block;
+        margin-bottom: 10px;
     }
+    /* Botones principales de pestañas */
     div.stButton > button:first-child {
         border-radius: 8px;
         font-weight: bold;
         padding: 12px;
         color: white;
         width: 100%;
+        background-color: #1a2233;
+        border: 1px solid #2a3447;
+    }
+    div.stButton > button:hover {
+        background-color: #2a3447;
+        border-color: #00ffcc;
     }
     .news-box {
         background-color: #161f30;
@@ -96,6 +104,9 @@ if 'mimo_user' not in st.session_state:
 if 'active_tab' not in st.session_state:
     st.session_state.active_tab = "Trading"
 
+if 'acc_mode' not in st.session_state:
+    st.session_state.acc_mode = "Cuenta Demo"
+
 def get_user_balances(username):
     conn = sqlite3.connect('mimo_trading.db')
     c = conn.cursor()
@@ -109,25 +120,27 @@ def get_user_balances(username):
     return row
 
 demo_bal, real_bal = get_user_balances(st.session_state.mimo_user)
+current_balance = demo_bal if st.session_state.acc_mode == "Cuenta Demo" else real_bal
 
-# ----------------- BARRA LATERAL (CONTROL DE CUENTA) -----------------
-st.sidebar.title("💎 Mimo Trading")
-acc_mode = st.sidebar.selectbox("Modo de Cuenta", ["Cuenta Demo", "Cuenta Real"])
-current_balance = demo_bal if acc_mode == "Cuenta Demo" else real_bal
-st.sidebar.metric(label=f"Saldo en {acc_mode}", value=f"${current_balance:,.2f}")
-st.sidebar.markdown("---")
-st.sidebar.write("💡 **Navega usando los botones superiores de la aplicación para mayor comodidad móvil.**")
-
-# ----------------- NAVEGACIÓN SUPERIOR TÁCTIL (¡Adiós fallos en celular!) -----------------
+# ----------------- ENCABEZADO Y CONTROL DE CUENTA VISIBLE -----------------
 st.title("💎 Mimo Trading Platform")
 
+col_top1, col_top2 = st.columns([2, 1])
+with col_top1:
+    st.session_state.acc_mode = st.selectbox("Modo de Cuenta Activa", ["Cuenta Demo", "Cuenta Real"], key="selectbox_acc")
+with col_top2:
+    st.metric(label=f"Saldo Disponible", value=f"${current_balance:,.2f}")
+
+st.markdown("---")
+
+# ----------------- NAVEGACIÓN SUPERIOR TÁCTIL (Pestañas limpias) -----------------
 col_n1, col_n2, col_n3 = st.columns(3)
 with col_n1:
-    if st.button("📈 Ir a Trading Room"):
+    if st.button("📈 Sala Trading"):
         st.session_state.active_tab = "Trading"
         st.rerun()
 with col_n2:
-    if st.button("💳 Billetera y Fondos"):
+    if st.button("💳 Billetera / Fondos"):
         st.session_state.active_tab = "Billetera"
         st.rerun()
 with col_n3:
@@ -180,7 +193,7 @@ if st.session_state.active_tab == "Trading":
                 won = np.random.choice([True, False], p=[0.55, 0.45])
                 profit = investment * 1.85 if won else 0
                 
-                if acc_mode == "Cuenta Demo":
+                if st.session_state.acc_mode == "Cuenta Demo":
                     new_bal = demo_bal - investment + profit
                     c.execute("UPDATE users SET balance_demo = ? WHERE username = ?", (new_bal, st.session_state.mimo_user))
                 else:
@@ -210,7 +223,7 @@ if st.session_state.active_tab == "Trading":
                 won = np.random.choice([True, False], p=[0.55, 0.45])
                 profit = investment * 1.85 if won else 0
                 
-                if acc_mode == "Cuenta Demo":
+                if st.session_state.acc_mode == "Cuenta Demo":
                     new_bal = demo_bal - investment + profit
                     c.execute("UPDATE users SET balance_demo = ? WHERE username = ?", (new_bal, st.session_state.mimo_user))
                 else:
@@ -287,9 +300,9 @@ elif st.session_state.active_tab == "Billetera":
     col_dep, col_ret = st.columns(2)
     
     with col_dep:
-        st.subheader("📥 Depositar Fondos")
-        dep_amount = st.number_input("Monto a Depositar ($ USD)", min_value=10.0, max_value=5000.0, value=100.0, step=10.0)
-        gateway = st.selectbox("Método de Pago", ["Tarjeta Débito/Crédito (Stripe)", "PayPal", "Criptomonedas (USDT)"])
+        st.markdown("### 📥 Depositar Fondos")
+        dep_amount = st.number_input("Monto a Depositar ($ USD)", min_value=10.0, max_value=5000.0, value=100.0, step=10.0, key="dep_input")
+        gateway = st.selectbox("Método de Pago", ["Tarjeta Débito/Crédito (Stripe)", "PayPal", "Criptomonedas (USDT)"], key="gate_input")
         if st.button("Confirmar Depósito Real"):
             conn = sqlite3.connect('mimo_trading.db')
             c = conn.cursor()
@@ -301,11 +314,11 @@ elif st.session_state.active_tab == "Billetera":
             st.rerun()
 
     with col_ret:
-        st.subheader("📤 Retirar Ganancias")
+        st.markdown("### 📤 Retirar Ganancias")
         max_ret = float(real_bal) if real_bal >= 10.0 else 10.0
         val_ret = 50.0 if real_bal >= 50.0 else max_ret
-        ret_amount = st.number_input("Monto a Retirar ($ USD)", min_value=10.0, max_value=max_ret, value=val_ret, step=10.0)
-        dest = st.text_input("Cuenta Bancaria / Dirección de Retiro")
+        ret_amount = st.number_input("Monto a Retirar ($ USD)", min_value=10.0, max_value=max_ret, value=val_ret, step=10.0, key="ret_input")
+        dest = st.text_input("Cuenta Bancaria / Dirección de Retiro", key="dest_input")
         if st.button("Solicitar Retiro"):
             if real_bal >= ret_amount:
                 conn = sqlite3.connect('mimo_trading.db')
